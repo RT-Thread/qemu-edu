@@ -1,0 +1,19 @@
+[package]
+name = "rt-rust"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "rt_rust"
+crate-type = ["staticlib"]
+
+[dependencies]
+
+[profile.release]
+lto = true
+opt-level = "z"
+codegen-units = 1
+panic = "abort"
+
+[profile.dev]
+panic = "abort"
