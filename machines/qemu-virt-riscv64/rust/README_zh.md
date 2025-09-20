@@ -28,7 +28,6 @@ rust/
 ├── rust_cmd.c           # MSH 命令注册
 ├── SConscript           # 带自动检测的构建脚本
 ├── Kconfig             # 配置选项
-└── ARCHITECTURE.md      # 架构支持详情
 ```
 
 ## 快速开始
@@ -48,7 +47,7 @@ rustup target add riscv64imac-unknown-none-elf
 # ARM Cortex-M4
 rustup target add thumbv7em-none-eabi
 
-# 其他目标请参见 ARCHITECTURE.md
+# 其他目标请根据实际工具链/ABI 添加对应的 Rust target
 ```
 
 ### 构建

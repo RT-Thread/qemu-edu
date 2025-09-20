@@ -28,7 +28,6 @@ rust/
 ├── rust_cmd.c           # MSH command registration
 ├── SConscript           # Build script with auto-detection
 ├── Kconfig             # Configuration options
-└── ARCHITECTURE.md      # Architecture support details
 ```
 
 ## Quick Start
@@ -48,7 +47,7 @@ rustup target add riscv64imac-unknown-none-elf
 # For ARM Cortex-M4
 rustup target add thumbv7em-none-eabi
 
-# For other targets, see ARCHITECTURE.md
+# For other targets, add the corresponding Rust target per your toolchain/ABI
 ```
 
 ### Build
@@ -93,11 +92,11 @@ The build system automatically detects the correct target from RT-Thread configu
 
 ## Configuration Options
 
-Configure via `menuconfig`:
+Configure via `menuconfig` (mapped to Cargo features automatically):
 
 - `RT_USING_RUST` - Enable/disable Rust component
 - `RUST_DEBUG_BUILD` - Build with debug symbols
-- `RUST_EXAMPLE_*` - Enable specific examples
+- `RUST_EXAMPLE_*` - Enable specific examples (passed as Cargo features)
 - `RUST_INIT_COMPONENT` - Auto-initialize on startup
 
 ## Technical Details

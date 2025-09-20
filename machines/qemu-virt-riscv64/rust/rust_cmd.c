@@ -22,23 +22,30 @@
 extern int rust_init(void);
 
 /* hello module */
+#ifdef RUST_EXAMPLE_HELLO
 extern void rust_hello(void);
 extern void rust_hello_with_name(const char *name);
 extern void rust_hello_rust_style(void);
+#endif
 
 /* printf_demo module */
+#ifdef RUST_EXAMPLE_PRINTF
 extern void rust_printf_demo(void);
 extern int rust_sprintf_demo(void);
+#endif
 
 /* string_demo module */
+#ifdef RUST_EXAMPLE_STRING
 extern size_t rust_strlen_demo(const char *s);
 extern int rust_strcmp_demo(const char *s1, const char *s2);
 extern void rust_strcpy_demo(void);
 extern void rust_strcat_demo(void);
 extern int rust_strstr_demo(const char *haystack, const char *needle);
 extern void rust_string_demo_all(void);
+#endif
 
 /* memory_demo module */
+#ifdef RUST_EXAMPLE_MEMORY
 extern int rust_add(int a, int b);
 extern int rust_multiply(int a, int b);
 extern int rust_memcpy_test(void *dest, const void *src, size_t size);
@@ -47,17 +54,21 @@ extern void rust_memcmp_demo(void);
 extern void rust_malloc_demo(void);
 extern void rust_rt_malloc_demo(void);
 extern void rust_memory_demo_all(void);
+#endif
 
 /* thread_demo module */
+#ifdef RUST_EXAMPLE_THREAD
 extern void rust_thread_create_demo(void);
 extern void rust_thread_self_demo(void);
 extern void rust_thread_sleep_demo(void);
 extern void rust_thread_wrapper_demo(void);
 extern void rust_thread_demo_all(void);
+#endif
 
 /* ============== MSH command implementation ============== */
 
 /* Basic command: hello */
+#ifdef RUST_EXAMPLE_HELLO
 static int cmd_rust_hello(int argc, char **argv)
 {
     if (argc == 1)
@@ -75,8 +86,10 @@ static int cmd_rust_hello(int argc, char **argv)
     return 0;
 }
 MSH_CMD_EXPORT_ALIAS(cmd_rust_hello, rust_hello, Rust hello command);
+#endif
 
 /* Arithmetic command: add */
+#ifdef RUST_EXAMPLE_MEMORY
 static int cmd_rust_add(int argc, char **argv)
 {
     if (argc < 3)
@@ -111,8 +124,10 @@ static int cmd_rust_mul(int argc, char **argv)
     return 0;
 }
 MSH_CMD_EXPORT_ALIAS(cmd_rust_mul, rust_mul, Multiply two numbers using Rust);
+#endif /* RUST_EXAMPLE_MEMORY */
 
 /* String command: strlen */
+#ifdef RUST_EXAMPLE_STRING
 static int cmd_rust_strlen(int argc, char **argv)
 {
     if (argc < 2)
@@ -149,16 +164,20 @@ static int cmd_rust_string(int argc, char **argv)
     return 0;
 }
 MSH_CMD_EXPORT_ALIAS(cmd_rust_string, rust_string, Demonstrate string operations);
+#endif /* RUST_EXAMPLE_STRING */
 
 /* Memory demonstration */
+#ifdef RUST_EXAMPLE_MEMORY
 static int cmd_rust_memory(int argc, char **argv)
 {
     rust_memory_demo_all();
     return 0;
 }
 MSH_CMD_EXPORT_ALIAS(cmd_rust_memory, rust_memory, Demonstrate memory operations);
+#endif
 
 /* Thread demonstration */
+#ifdef RUST_EXAMPLE_THREAD
 static int cmd_rust_thread(int argc, char **argv)
 {
     if (argc == 1)
@@ -193,8 +212,10 @@ static int cmd_rust_thread(int argc, char **argv)
     return 0;
 }
 MSH_CMD_EXPORT_ALIAS(cmd_rust_thread, rust_thread, RT-Thread operations demo);
+#endif
 
 /* Printf demonstration */
+#ifdef RUST_EXAMPLE_PRINTF
 static int cmd_rust_printf(int argc, char **argv)
 {
     rust_printf_demo();
@@ -202,6 +223,7 @@ static int cmd_rust_printf(int argc, char **argv)
     return 0;
 }
 MSH_CMD_EXPORT_ALIAS(cmd_rust_printf, rust_printf, Demonstrate printf operations);
+#endif
 
 /* Comprehensive test command */
 static int cmd_rust_test(int argc, char **argv)
@@ -210,31 +232,51 @@ static int cmd_rust_test(int argc, char **argv)
     
     /* 1. Hello test */
     printf("\n1. Hello Test:\n");
+    #ifdef RUST_EXAMPLE_HELLO
     rust_hello();
     rust_hello_rust_style();
+    #else
+    printf("   (hello example disabled)\n");
+    #endif
     
     /* 2. Printf test */
     printf("\n2. Printf Test:\n");
+    #ifdef RUST_EXAMPLE_PRINTF
     rust_printf_demo();
+    #else
+    printf("   (printf example disabled)\n");
+    #endif
     
     /* 3. String test */
     printf("\n3. String Test:\n");
+    #ifdef RUST_EXAMPLE_STRING
     const char *test_str = "RT-Thread";
     printf("   strlen(\"%s\") = %zu\n", test_str, rust_strlen_demo(test_str));
+    #else
+    printf("   (string example disabled)\n");
+    #endif
     
     /* 4. Arithmetic test */
     printf("\n4. Arithmetic Test:\n");
+    #ifdef RUST_EXAMPLE_MEMORY
     printf("   42 + 58 = %d\n", rust_add(42, 58));
     printf("   10 * 20 = %d\n", rust_multiply(10, 20));
+    #else
+    printf("   (memory/arithmetic example disabled)\n");
+    #endif
     
     /* 5. Memory test */
     printf("\n5. Memory Test:\n");
+    #ifdef RUST_EXAMPLE_MEMORY
     char src[] = "Hello";
     char dest[10];
     if (rust_memcpy_test(dest, src, strlen(src) + 1))
     {
         printf("   memcpy passed: '%s'\n", dest);
     }
+    #else
+    printf("   (memory example disabled)\n");
+    #endif
     
     printf("\n=== All tests completed ===\n");
     return 0;
@@ -245,15 +287,25 @@ MSH_CMD_EXPORT_ALIAS(cmd_rust_test, rust_test, Run Rust component test suite);
 static int cmd_rust_help(int argc, char **argv)
 {
     printf("\nRust Component Commands:\n");
+    #ifdef RUST_EXAMPLE_HELLO
     printf("  rust_hello [name]    - Say hello\n");
+    #endif
+    #ifdef RUST_EXAMPLE_MEMORY
     printf("  rust_add <n1> <n2>   - Add two numbers\n");
     printf("  rust_mul <n1> <n2>   - Multiply two numbers\n");
+    printf("  rust_memory          - Memory operations demo\n");
+    #endif
+    #ifdef RUST_EXAMPLE_STRING
     printf("  rust_strlen <str>    - Get string length\n");
     printf("  rust_strcmp <s1> <s2> - Compare strings\n");
     printf("  rust_string          - String operations demo\n");
+    #endif
+    #ifdef RUST_EXAMPLE_PRINTF
     printf("  rust_printf          - Printf operations demo\n");
-    printf("  rust_memory          - Memory operations demo\n");
+    #endif
+    #ifdef RUST_EXAMPLE_THREAD
     printf("  rust_thread [opt]    - Thread operations demo\n");
+    #endif
     printf("  rust_test            - Run test suite\n");
     printf("  rust_help            - Show this help\n");
     return 0;
@@ -271,4 +323,6 @@ static int rust_component_init(void)
     }
     return ret;
 }
+#ifdef RUST_INIT_COMPONENT
 INIT_APP_EXPORT(rust_component_init);
+#endif

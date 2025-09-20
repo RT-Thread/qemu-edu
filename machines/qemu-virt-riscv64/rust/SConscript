@@ -1,397 +1,79 @@
 import os
+import sys
 from building import *
 
 cwd = GetCurrentDir()
 
-# Check if Rust component is enabled
-if not GetDepend(['RT_USING_RUST']):
+# Import helper utilities
+sys.path.append(os.path.join(cwd, 'tools'))
+from build_support import (
+    detect_rust_target,
+    make_rustflags,
+    collect_features,
+    verify_rust_toolchain,
+    ensure_rust_target_installed,
+    cargo_build_staticlib,
+    clean_rust_build,
+)
+
+
+def _has(sym: str) -> bool:
+    try:
+        return bool(GetDepend([sym]))
+    except Exception:
+        return bool(GetDepend(sym))
+
+
+# Not enabled? Return empty group early
+if not _has('RT_USING_RUST'):
     group = []
     Return('group')
 
-# ===========================
-# Target Architecture Mapping
-# ===========================
 
-def get_rust_target():
-    """
-    Automatically select Rust target based on RT-Thread configuration.
-    Returns the appropriate Rust target triple or None if unsupported.
-    """
-    
-    # Target mapping table: RT-Thread config -> Rust target triple
-    target_map = {
-        # ARM Cortex-M Series
-        ('ARM', 'ARCH_ARM_CORTEX_M3'): 'thumbv7m-none-eabi',
-        ('ARM', 'ARCH_ARM_CORTEX_M4'): 'thumbv7em-none-eabi',
-        ('ARM', 'ARCH_ARM_CORTEX_M7'): 'thumbv7em-none-eabi',
-        ('ARM', 'ARCH_ARM_CORTEX_M33'): 'thumbv8m.main-none-eabi',
-        
-        # ARM Cortex-M4F/M7F with FPU
-        ('ARM', 'ARCH_ARM_CORTEX_FPU'): 'thumbv7em-none-eabihf',
-        
-        # ARM Cortex-A Series (ARMv7-A)
-        ('ARM', 'ARCH_ARM_CORTEX_A'): 'armv7a-none-eabi',
-        
-        # AArch64 (ARM64)
-        ('AARCH64', 'ARCH_ARMV8'): 'aarch64-unknown-none',
-        ('AARCH64', 'ARCH_ARM64'): 'aarch64-unknown-none',
-        ('AARCH64', 'ARCH_AARCH64'): 'aarch64-unknown-none',
-        
-        # AArch64 with soft-float
-        ('AARCH64', 'ARCH_AARCH64_SOFT_FLOAT'): 'aarch64-unknown-none-softfloat',
-        
-        # RISC-V 32-bit variants
-        ('RISCV32', 'ARCH_RISCV32'): {
-            # Check for FPU extensions
-            'with_fpu': 'riscv32imafc-unknown-none-elf',
-            'without_fpu': 'riscv32imac-unknown-none-elf',
-        },
-        
-        # RISC-V 64-bit variants
-        ('RISCV64', 'ARCH_RISCV64'): {
-            # Check for FPU extensions
-            'with_fpu': 'riscv64gc-unknown-none-elf',
-            'without_fpu': 'riscv64imac-unknown-none-elf',
-        },
-    }
-    
-    # Detect architecture from RT-Thread configuration
-    arch = None
-    subarch = None
-    has_fpu = False
-    
-    # Check ARM architectures
-    if GetDepend(['ARCH_ARM']):
-        arch = 'ARM'
-        if GetDepend(['ARCH_ARM_CORTEX_M3']):
-            subarch = 'ARCH_ARM_CORTEX_M3'
-        elif GetDepend(['ARCH_ARM_CORTEX_M4']):
-            subarch = 'ARCH_ARM_CORTEX_M4'
-            # Check FPU from compiler flags since macros might be missing
-            import rtconfig
-            if hasattr(rtconfig, 'CFLAGS'):
-                has_fpu = '-mfloat-abi=hard' in rtconfig.CFLAGS
-            else:
-                has_fpu = GetDepend(['ARCH_FPU_VFP']) or GetDepend(['ARCH_ARM_FPU'])
-        elif GetDepend(['ARCH_ARM_CORTEX_M7']):
-            subarch = 'ARCH_ARM_CORTEX_M7'
-            # Check FPU from compiler flags since macros might be missing
-            import rtconfig
-            if hasattr(rtconfig, 'CFLAGS'):
-                has_fpu = '-mfloat-abi=hard' in rtconfig.CFLAGS
-            else:
-                has_fpu = GetDepend(['ARCH_FPU_VFP']) or GetDepend(['ARCH_ARM_FPU'])
-        elif GetDepend(['ARCH_ARM_CORTEX_M33']):
-            subarch = 'ARCH_ARM_CORTEX_M33'
-            has_fpu = GetDepend(['ARCH_FPU_VFP']) or GetDepend(['ARCH_ARM_FPU'])
-        elif GetDepend(['ARCH_ARM_CORTEX_A']):
-            subarch = 'ARCH_ARM_CORTEX_A'
-        
-        # Special handling for FPU variants
-        if has_fpu and subarch in ['ARCH_ARM_CORTEX_M4', 'ARCH_ARM_CORTEX_M7']:
-            subarch = 'ARCH_ARM_CORTEX_FPU'
-    
-    # Check AArch64 architectures
-    elif GetDepend(['ARCH_AARCH64']) or GetDepend(['ARCH_ARMV8']) or GetDepend(['ARCH_ARM64']):
-        arch = 'AARCH64'
-        if GetDepend(['ARCH_AARCH64']):
-            subarch = 'ARCH_AARCH64'
-        elif GetDepend(['ARCH_ARMV8']):
-            subarch = 'ARCH_ARMV8'
-        else:
-            subarch = 'ARCH_ARM64'
-        
-        # Check for soft-float ABI
-        if GetDepend(['ARCH_CPU_FLOAT_ABI_SOFT']):
-            subarch = 'ARCH_AARCH64_SOFT_FLOAT'
-    
-    # Check RISC-V 32-bit
-    elif GetDepend(['ARCH_RISCV32']):
-        arch = 'RISCV32'
-        subarch = 'ARCH_RISCV32'
-        has_fpu = GetDepend(['ARCH_RISCV_FPU']) or GetDepend(['ENABLE_FPU'])
-    
-    # Check RISC-V 64-bit
-    elif GetDepend(['ARCH_RISCV64']):
-        arch = 'RISCV64'
-        subarch = 'ARCH_RISCV64'
-        # Don't rely on ENABLE_FPU alone, check actual ABI from compiler flags
-        has_fpu = False  # Will be determined from compiler flags
-    
-    # Look up target from mapping
-    if arch and subarch:
-        key = (arch, subarch)
-        if key in target_map:
-            target = target_map[key]
-            
-            # Handle RISC-V special case with FPU detection
-            if isinstance(target, dict):
-                if has_fpu:
-                    target = target['with_fpu']
-                else:
-                    target = target['without_fpu']
-            
-            return target
-    
-    # Fallback: try to detect from compiler flags
-    return detect_from_compiler_flags()
-
-def detect_from_compiler_flags():
-    """
-    Fallback: detect target from compiler flags if config detection fails.
-    """
-    import rtconfig
-    
-    if hasattr(rtconfig, 'ARCH'):
-        arch = rtconfig.ARCH
-        
-        # Map common ARCH values to Rust targets
-        arch_map = {
-            'arm': 'thumbv7m-none-eabi',
-            'armv7': 'armv7a-none-eabi', 
-            'aarch64': 'aarch64-unknown-none',
-            'riscv32': 'riscv32imac-unknown-none-elf',
-            'riscv64': 'riscv64imac-unknown-none-elf',
-        }
-        
-        if arch in arch_map:
-            return arch_map[arch]
-    
-    # Parse CFLAGS for architecture hints
-    if hasattr(rtconfig, 'CFLAGS'):
-        cflags = rtconfig.CFLAGS
-        
-        # RISC-V detection from march
-        if '-march=rv32' in cflags:
-            if 'f' in cflags or 'd' in cflags:
-                return 'riscv32imafc-unknown-none-elf'
-            return 'riscv32imac-unknown-none-elf'
-        elif '-march=rv64' in cflags:
-            # Check for hard-float vs soft-float ABI
-            if '-mabi=lp64d' in cflags or '-mabi=lp64f' in cflags:
-                return 'riscv64gc-unknown-none-elf'
-            return 'riscv64imac-unknown-none-elf'
-        
-        # ARM detection
-        if '-mcpu=cortex-m3' in cflags:
-            return 'thumbv7m-none-eabi'
-        elif '-mcpu=cortex-m4' in cflags:
-            if '-mfpu=' in cflags and '-mfloat-abi=hard' in cflags:
-                return 'thumbv7em-none-eabihf'
-            return 'thumbv7em-none-eabi'
-        elif '-mcpu=cortex-m7' in cflags:
-            if '-mfpu=' in cflags and '-mfloat-abi=hard' in cflags:
-                return 'thumbv7em-none-eabihf'
-            return 'thumbv7em-none-eabi'
-        elif '-mcpu=cortex-a' in cflags or 'armv7-a' in cflags:
-            return 'armv7a-none-eabi'
-    
-    return None
-
-# ===========================
-# Build Configuration
-# ===========================
-
-def get_rustflags(target):
-    """
-    Generate RUSTFLAGS based on target architecture.
-    """
-    rustflags = [
-        '-C opt-level=z',      # Optimize for size
-        '-C panic=abort',       # No unwinding on panic
-        '-C relocation-model=static',  # Static linking
-    ]
-    
-    # Architecture-specific flags
-    if 'riscv' in target:
-        rustflags.extend([
-            '-C code-model=medium',  # Matches -mcmodel=medany
-            '-C link-dead-code'      # Keep all symbols for .FSymTab
-        ])
-        
-        # Add architecture-specific link args for RISC-V
-        import rtconfig
-        if hasattr(rtconfig, 'CFLAGS'):
-            if '-march=' in rtconfig.CFLAGS:
-                # Extract march flag
-                for flag in rtconfig.CFLAGS.split():
-                    if flag.startswith('-march='):
-                        rustflags.append(f'-C link-arg={flag}')
-            if '-mabi=' in rtconfig.CFLAGS:
-                # Extract mabi flag
-                for flag in rtconfig.CFLAGS.split():
-                    if flag.startswith('-mabi='):
-                        rustflags.append(f'-C link-arg={flag}')
-    
-    elif 'thumb' in target:
-        # ARM Cortex-M specific flags
-        rustflags.append('-C link-arg=-nostartfiles')
-        
-    elif 'aarch64' in target:
-        # AArch64 specific flags
-        rustflags.append('-C link-arg=-nostartfiles')
-    
-    return rustflags
-
-# ===========================
-# Toolchain Management
-# ===========================
-
-def check_rust_toolchain():
-    """
-    Check if Rust toolchain is available.
-    """
-    import subprocess
-    try:
-        result = subprocess.run(['rustc', '--version'], 
-                              capture_output=True, text=True)
-        return result.returncode == 0
-    except:
-        return False
-
-def ensure_rust_target(target):
-    """
-    Check if target is installed, provide installation instructions if not.
-    """
-    import subprocess
-    
-    # Check if target is already installed
-    result = subprocess.run(['rustup', 'target', 'list', '--installed'],
-                          capture_output=True, text=True)
-    if result.returncode == 0 and target in result.stdout:
-        return True
-    
-    print(f"Rust target '{target}' is not installed.")
-    print(f"Please install it with: rustup target add {target}")
-    return False
-
-# ===========================
-# Build Functions
-# ===========================
-
-def clean_rust():
-    """
-    Clean Rust build artifacts from build/rust directory.
-    """
-    import shutil
-    
-    # Get the build directory path
-    build_dir = os.path.join(Dir('#').abspath, 'build', 'rust')
-    
-    if os.path.exists(build_dir):
-        print("Cleaning Rust build artifacts...")
-        try:
-            shutil.rmtree(build_dir)
-            print("Rust build artifacts cleaned successfully")
-        except Exception as e:
-            print(f"Warning: Failed to clean Rust artifacts: {e}")
-    else:
-        print("No Rust build artifacts to clean")
-
-def build_rust_lib():
-    """
-    Build Rust library with automatic target detection.
-    Output to build/rust directory for clean separation.
-    """
-    import subprocess
-    import shutil
-    rust_dir = cwd
-    
-    # Detect target architecture
-    target = get_rust_target()
-    if not target:
-        print("Error: Unable to detect target architecture for Rust")
-        print("Please check your RT-Thread configuration")
-        return None
-    
-    print(f"Detected Rust target: {target}")
-    
-    # Ensure target is installed
-    if not ensure_rust_target(target):
-        return None
-    
-    # Set up build directories
-    build_root = os.path.join(Dir('#').abspath, 'build', 'rust')
-    target_dir = os.path.join(build_root, 'target')
-    
-    # Create build directory if it doesn't exist
-    os.makedirs(build_root, exist_ok=True)
-    
-    # Set up build environment
-    env = os.environ.copy()
-    rustflags = get_rustflags(target)
-    env['RUSTFLAGS'] = ' '.join(rustflags)
-    env['CARGO_TARGET_DIR'] = target_dir  # Redirect cargo output to build/rust/target
-    
-    # Determine build mode
-    build_mode = 'release'
-    if GetDepend(['RUST_DEBUG_BUILD']):
-        build_mode = 'debug'
-    
-    # Build command
-    cmd = [
-        'cargo', 'build',
-        '--quiet',  # Suppress verbose output
-        '--target', target,
-        '--manifest-path', os.path.join(rust_dir, 'Cargo.toml')
-    ]
-    
-    if build_mode == 'release':
-        cmd.insert(2, '--release')
-    
-    print("Building Rust component...")
-    result = subprocess.run(cmd, cwd=rust_dir, env=env, 
-                          capture_output=True, text=True)
-    
-    if result.returncode == 0:
-        # Path to the built library in build/rust/target
-        lib_path = os.path.join(target_dir, target, 
-                               build_mode, 'librt_rust.a')
-        if os.path.exists(lib_path):
-            print("Rust component built successfully")
-            return lib_path
-        else:
-            print(f"Warning: Library not found at expected location")
-    else:
-        print("Warning: Rust build failed")
-        if result.stderr:
-            print(result.stderr)
-    
-    return None
-
-# ===========================
-# Main Build Logic
-# ===========================
-
-# Source files - rust_cmd.c handles MSH command registration
+# Source files – MSH command glue
 src = ['rust_cmd.c']
 LIBS = []
 LIBPATH = []
 
-# Check if we're cleaning or building
 if GetOption('clean'):
-    # Clean action
-    if check_rust_toolchain():
-        clean_rust()
+    # Clean Rust artifacts if toolchain present
+    if verify_rust_toolchain():
+        clean_rust_build(Dir('#').abspath)
     else:
-        print("Warning: Rust toolchain not found, skipping Rust clean")
+        print('Warning: Rust toolchain not found, skipping Rust clean')
 else:
-    # Build action
-    if check_rust_toolchain():
-        rust_lib = build_rust_lib()
-        if rust_lib:
-            # Add Rust library to link
-            LIBS = ['rt_rust']
-            LIBPATH = [os.path.dirname(rust_lib)]
-            print("Rust library linked successfully")
-        else:
-            print("Warning: Failed to build Rust library")
-    else:
-        print("Warning: Rust toolchain not found")
-        print("Please install Rust from https://rustup.rs")
+    if verify_rust_toolchain():
+        import rtconfig
 
-# Define component group
-group = DefineGroup('rust', src, depend=['RT_USING_RUST'], 
-                   LIBS=LIBS, LIBPATH=LIBPATH)
+        target = detect_rust_target(_has, rtconfig)
+        if not target:
+            print('Error: Unable to detect Rust target; please check configuration')
+        else:
+            print(f'Detected Rust target: {target}')
+
+            # Optional hint if target missing
+            ensure_rust_target_installed(target)
+
+            # Build mode and features
+            debug = bool(_has('RUST_DEBUG_BUILD'))
+            features = collect_features(_has)
+
+            rustflags = make_rustflags(rtconfig, target)
+            rust_lib = cargo_build_staticlib(
+                rust_dir=cwd, target=target, features=features, debug=debug, rustflags=rustflags
+            )
+
+            if rust_lib:
+                LIBS = ['rt_rust']
+                LIBPATH = [os.path.dirname(rust_lib)]
+                print('Rust library linked successfully')
+            else:
+                print('Warning: Failed to build Rust library')
+    else:
+        print('Warning: Rust toolchain not found')
+        print('Please install Rust from https://rustup.rs')
+
+# Define component group for SCons
+group = DefineGroup('rust', src, depend=['RT_USING_RUST'], LIBS=LIBS, LIBPATH=LIBPATH)
 
 Return('group')

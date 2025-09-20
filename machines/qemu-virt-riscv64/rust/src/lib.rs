@@ -19,14 +19,57 @@ pub mod libc;
 pub mod librt;
 pub mod init;
 
-// Include example modules when building
-// Note: Examples are in separate files under src/examples/ directory
-// They are included here to make their functions available to C code
-include!("examples/hello.rs");
-include!("examples/printf_demo.rs");
-include!("examples/string_demo.rs");
-include!("examples/memory_demo.rs");
-include!("examples/thread_demo.rs");
+// Example modules are gated by Cargo features so they can be toggled from Kconfig
+// Each module re-exports its `#[no_mangle]` extern functions when enabled
+#[cfg(feature = "example_hello")]
+mod example_hello {
+    use crate::libc;
+    use crate::librt;
+    use core::ffi::{c_char, c_void};
+    include!("examples/hello.rs");
+}
+#[cfg(feature = "example_hello")]
+pub use example_hello::*;
+
+#[cfg(feature = "example_printf")]
+mod example_printf {
+    use crate::libc;
+    use crate::librt;
+    use core::ffi::{c_char, c_void};
+    include!("examples/printf_demo.rs");
+}
+#[cfg(feature = "example_printf")]
+pub use example_printf::*;
+
+#[cfg(feature = "example_string")]
+mod example_string {
+    use crate::libc;
+    use crate::librt;
+    use core::ffi::{c_char, c_void};
+    include!("examples/string_demo.rs");
+}
+#[cfg(feature = "example_string")]
+pub use example_string::*;
+
+#[cfg(feature = "example_memory")]
+mod example_memory {
+    use crate::libc;
+    use crate::librt;
+    use core::ffi::{c_char, c_void};
+    include!("examples/memory_demo.rs");
+}
+#[cfg(feature = "example_memory")]
+pub use example_memory::*;
+
+#[cfg(feature = "example_thread")]
+mod example_thread {
+    use crate::libc;
+    use crate::librt;
+    use core::ffi::{c_char, c_void};
+    include!("examples/thread_demo.rs");
+}
+#[cfg(feature = "example_thread")]
+pub use example_thread::*;
 
 // Re-export initialization function
 pub use init::rust_init;
