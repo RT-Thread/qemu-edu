@@ -152,6 +152,10 @@ def collect_features(has):
         feats.append("example_printf")
     if has("RUST_EXAMPLE_THREAD"):
         feats.append("example_thread")
+    if has("RUST_EXAMPLE_VEC"):
+        feats.append("example_vec")
+    if has("RUST_EXAMPLE_DL"):
+        feats.append("example_dl")
     return feats
 
 

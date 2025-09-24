@@ -16,6 +16,8 @@ example_memory = []
 example_string = []
 example_printf = []
 example_thread = []
+example_dl = []
+example_vec = []
 
 [profile.release]
 lto = true

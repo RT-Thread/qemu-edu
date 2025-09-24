@@ -43,6 +43,18 @@ if RT_USING_RUST
         default y
         help
             Enable RT-Thread threading API examples.
+    
+    config RUST_EXAMPLE_VEC
+        bool "Enable vector examples"
+        default y
+        help
+            Enable vector examples.
+
+    config RUST_EXAMPLE_DL
+        bool "Enable libdl examples"
+        default y
+        help
+            Enable libdl examples.
 
     config RUST_INIT_COMPONENT
         bool "Auto-initialize Rust component"
