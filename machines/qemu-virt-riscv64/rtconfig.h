@@ -109,7 +109,6 @@
 
 /* Memory Management */
 
-#define RT_PAGE_MAX_ORDER 11
 #define RT_USING_MEMPOOL
 #define RT_USING_SLAB
 #define RT_USING_SLAB_AS_HEAP
@@ -239,6 +238,7 @@
 #define RT_USING_POSIX_DELAY
 #define RT_USING_POSIX_CLOCK
 #define RT_USING_POSIX_TIMER
+#define RT_USING_MODULE
 
 /* Interprocess Communication (IPC) */
 
@@ -331,6 +331,16 @@
 #define RT_USING_ADT_REF
 /* end of Utilities */
 
+/* Memory management */
+
+#define RT_PAGE_AFFINITY_BLOCK_SIZE 0x1000
+#define RT_PAGE_MAX_ORDER 11
+
+/* Debugging */
+
+/* end of Debugging */
+/* end of Memory management */
+
 /* Using USB legacy version */
 
 /* end of Using USB legacy version */
@@ -420,6 +430,9 @@
 /* Micrium: Micrium software products porting for RT-Thread */
 
 /* end of Micrium: Micrium software products porting for RT-Thread */
+#define PKG_USING_LWEXT4
+#define RT_USING_DFS_LWEXT4
+#define PKG_USING_LWEXT4_LATEST_VERSION
 /* end of system packages */
 
 /* peripheral libraries and drivers */
@@ -437,6 +450,30 @@
 /* Kendryte SDK */
 
 /* end of Kendryte SDK */
+
+/* WCH HAL & SDK Drivers */
+
+/* end of WCH HAL & SDK Drivers */
+
+/* AT32 HAL & SDK Drivers */
+
+/* end of AT32 HAL & SDK Drivers */
+
+/* HC32 DDL Drivers */
+
+/* end of HC32 DDL Drivers */
+
+/* NXP HAL & SDK Drivers */
+
+/* end of NXP HAL & SDK Drivers */
+
+/* NUVOTON Drivers */
+
+/* end of NUVOTON Drivers */
+
+/* GD32 Drivers */
+
+/* end of GD32 Drivers */
 /* end of HAL & SDK Drivers */
 
 /* sensors drivers */
@@ -526,6 +563,9 @@
 #define BSP_USING_VIRTIO_GPU
 #define BSP_USING_VIRTIO_INPUT
 /* end of RISC-V QEMU virt64 configs */
+#define RT_USING_RUST
+#define RUST_EXAMPLE_HELLO
+#define RUST_INIT_COMPONENT
 #define BOARD_QEMU_VIRT_RV64
 #define ENABLE_FPU
 #define __STACKSIZE__ 16384
