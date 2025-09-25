@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Change Logs:
- * Date           Author       foxglove
+ * Date           Author       notes
  * 2024-09-15     foxglove     1.0 version
  */
 
@@ -44,8 +44,159 @@ extern "C" {
     pub fn rt_object_find(name: *const c_char, object_type: u8) -> *mut c_void;
 }
 
+// ============== Thread management ==============
+extern "C" {
+    pub fn rt_thread_create(
+        name: *const c_char,
+        entry: extern "C" fn(*mut c_void),
+        parameter: *mut c_void,
+        stack_size: rt_size_t,
+        priority: u8,
+        tick: u32,
+    ) -> rt_thread_t;
+    
+    pub fn rt_thread_delete(thread: rt_thread_t) -> rt_err_t;
+    pub fn rt_thread_startup(thread: rt_thread_t) -> rt_err_t;
+    pub fn rt_thread_self() -> rt_thread_t;
+    pub fn rt_thread_yield() -> rt_err_t;
+    pub fn rt_thread_delay(tick: rt_tick_t) -> rt_err_t;
+    pub fn rt_thread_mdelay(ms: c_int) -> rt_err_t;
+    pub fn rt_thread_suspend(thread: rt_thread_t) -> rt_err_t;
+    pub fn rt_thread_resume(thread: rt_thread_t) -> rt_err_t;
+}
+
+// ============== Semaphore management ==============
+extern "C" {
+    pub fn rt_sem_create(name: *const c_char, value: u32, flag: u8) -> rt_sem_t;
+    pub fn rt_sem_delete(sem: rt_sem_t) -> rt_err_t;
+    pub fn rt_sem_take(sem: rt_sem_t, time: rt_tick_t) -> rt_err_t;
+    pub fn rt_sem_trytake(sem: rt_sem_t) -> rt_err_t;
+    pub fn rt_sem_release(sem: rt_sem_t) -> rt_err_t;
+}
+
+// ============== Mutex management ==============
+extern "C" {
+    pub fn rt_mutex_create(name: *const c_char, flag: u8) -> rt_mutex_t;
+    pub fn rt_mutex_delete(mutex: rt_mutex_t) -> rt_err_t;
+    pub fn rt_mutex_take(mutex: rt_mutex_t, time: rt_tick_t) -> rt_err_t;
+    pub fn rt_mutex_release(mutex: rt_mutex_t) -> rt_err_t;
+}
+
+// ============== Memory management ==============
+extern "C" {
+    pub fn rt_malloc(size: rt_size_t) -> *mut c_void;
+    pub fn rt_free(ptr: *mut c_void);
+    pub fn rt_realloc(ptr: *mut c_void, newsize: rt_size_t) -> *mut c_void;
+    pub fn rt_calloc(count: rt_size_t, size: rt_size_t) -> *mut c_void;
+    pub fn rt_malloc_align(size: rt_size_t, align: rt_size_t) -> *mut c_void;
+    pub fn rt_free_align(ptr: *mut c_void);
+}
+
+// ============== Device management ==============
+extern "C" {
+    pub fn rt_device_find(name: *const c_char) -> rt_device_t;
+    pub fn rt_device_open(dev: rt_device_t, oflag: u16) -> rt_err_t;
+    pub fn rt_device_close(dev: rt_device_t) -> rt_err_t;
+    pub fn rt_device_read(
+        dev: rt_device_t,
+        pos: c_ulong,
+        buffer: *mut c_void,
+        size: rt_size_t,
+    ) -> rt_size_t;
+    pub fn rt_device_write(
+        dev: rt_device_t,
+        pos: c_ulong,
+        buffer: *const c_void,
+        size: rt_size_t,
+    ) -> rt_size_t;
+    pub fn rt_device_control(dev: rt_device_t, cmd: c_int, arg: *mut c_void) -> rt_err_t;
+}
+
+// ============== System tick ==============
+extern "C" {
+    pub fn rt_tick_get() -> rt_tick_t;
+    pub fn rt_tick_from_millisecond(ms: c_int) -> rt_tick_t;
+}
 
 // ============== Debug output ==============
 extern "C" {
     pub fn rt_kprintf(fmt: *const u8, ...) -> c_int;
+}
+
+// ============== Rust-friendly wrappers ==============
+
+/// RT-Thread thread handle wrapper
+pub struct Thread {
+    handle: rt_thread_t,
+}
+
+impl Thread {
+    /// Create new thread
+    pub fn create(
+        name: &[u8],
+        entry: extern "C" fn(*mut c_void),
+        param: *mut c_void,
+        stack_size: usize,
+        priority: u8,
+        tick: u32,
+    ) -> Option<Self> {
+        let handle = unsafe {
+            rt_thread_create(
+                name.as_ptr() as *const c_char,
+                entry,
+                param,
+                stack_size as rt_size_t,
+                priority,
+                tick,
+            )
+        };
+        
+        if handle.is_null() {
+            None
+        } else {
+            Some(Thread { handle })
+        }
+    }
+    
+    /// Start thread
+    pub fn startup(&self) -> Result<(), rt_err_t> {
+        let ret = unsafe { rt_thread_startup(self.handle) };
+        if ret == RT_EOK {
+            Ok(())
+        } else {
+            Err(ret)
+        }
+    }
+}
+
+impl Drop for Thread {
+    fn drop(&mut self) {
+        unsafe { rt_thread_delete(self.handle) };
+    }
+}
+
+/// Current thread sleep
+pub fn thread_sleep_ms(ms: u32) {
+    unsafe { rt_thread_mdelay(ms as c_int) };
+}
+
+/// Safe RT-Thread memory allocation
+pub fn rt_safe_malloc(size: usize) -> Option<*mut c_void> {
+    if size == 0 {
+        None
+    } else {
+        let ptr = unsafe { rt_malloc(size as rt_size_t) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(ptr)
+        }
+    }
+}
+
+/// Safe RT-Thread memory deallocation
+pub fn rt_safe_free(ptr: *mut c_void) {
+    if !ptr.is_null() {
+        unsafe { rt_free(ptr) }
+    }
 }
