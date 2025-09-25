@@ -1,105 +1,168 @@
-# RT-Thread Rust 组件
+# RT-Thread Rust Component
 
-RT-Thread RTOS 的通用 Rust 组件，支持多架构自动检测。
+A general-purpose Rust component for RT-Thread RTOS, supporting automatic multi-architecture detection.
 
-## 项目结构
+## Features
+
+- **Multi-architecture support**: Automatically detects ARM, AArch64, and RISC-V target architectures
+- **Zero configuration**: No need to manually configure the target platform
+- **Modular design**: Core modules and example code are clearly separated
+- **RT-Thread integration**: Full access to RT-Thread kernel APIs
+
+## Project Structure
 
 ```
 rust/
-├── Cargo.toml           # Rust 项目配置
+├── Cargo.toml           # Rust project configuration
 ├── src/
-│   ├── lib.rs           # 主库入口点
-│   ├── libc.rs          # 标准 C 库绑定
-│   ├── librt.rs         # RT-Thread 内核 API 绑定
-│   ├── init.rs          # 组件初始化
-│   └── examples/        # 示例演示
-│       └── hello.rs     # 基础 hello world
-├── rust_cmd.c           # MSH 命令注册
-├── SConscript           # 带自动检测的构建脚本
-├── Kconfig             # 配置选项
+│   ├── lib.rs           # Main library entry point
+│   ├── libc.rs          # Standard C library bindings
+│   ├── librt.rs         # RT-Thread kernel API bindings
+│   ├── init.rs          # Component initialization
+│   └── examples/        # Example demos
+│       ├── hello.rs     # Basic hello world
+│       ├── printf_demo.rs   # Printf formatting
+│       ├── string_demo.rs   # String operations
+│       ├── memory_demo.rs   # Memory management
+│       ├── vec_demo.rs      # Vec implementation
+│       ├── thread_demo.rs   # RT-Thread threads
+│       └── dlmodule_demo.rs   # Dynamic module loading
+├── rust_cmd.c           # MSH command registration
+├── SConscript           # Build script with auto-detection
+├── Kconfig              # Configuration options
 ```
 
-## 快速开始
+## Quick Start
 
-### 前置要求
+### Prerequisites
 
-1. **安装 Rust**
+1. **Install Rust**
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-2. **添加目标平台**（根据您的架构）
+2. **Add target platform** (according to your architecture)
 ```bash
-# RISC-V64（软浮点）
+# RISC-V64 (soft-float)
 rustup target add riscv64imac-unknown-none-elf
 
+# ARM Cortex-M4
+rustup target add thumbv7em-none-eabi
+
+# For other targets, add the corresponding Rust target according to your toolchain/ABI
 ```
 
-### 构建
+### Build
 
 ```bash
-# 在 menuconfig 中启用 Rust 组件
-scons --menuconfig
-# 导航至：Rust Component Support → Enable
+# Enable the Rust component in menuconfig
+menuconfig
+# Navigate to: Rust Component Support → Enable
 
-# 构建
-scons -j$(nproc)
+# For dynamic modules, enable dynamic module loading and file system:
+#     1. RT-Thread online packages → system packages → enable lwext4 file system
+#     2. RT-Thread Components → C/C++ and POSIX layer 
+#                               → POSIX (Portable Operating System Interface) layer
+#                               → Enable dynamic module APIs, dlopen()/dlsym()/dlclose() etc
 
-# 清理
+# Build
+scons
+
+# Clean
 scons -c
 ```
 
-## 支持的架构
+## Supported Architectures
 
-| 架构 | 目标 | 自动检测 |
-|------|------|----------|
-| RISC-V32 | riscv32ima[f]c-unknown-none-elf | ✓ |
-| RISC-V64 | riscv64[gc/imac]-unknown-none-elf | ✓ |
+| Architecture | Target | Auto Detection |
+|--------------|--------|---------------|
+| Cortex-M3    | thumbv7m-none-eabi | ✓ |
+| Cortex-M4/M7 | thumbv7em-none-eabi | ✓ |
+| Cortex-M4F/M7F | thumbv7em-none-eabihf | ✓ |
+| ARMv7-A      | armv7a-none-eabi | ✓ |
+| AArch64      | aarch64-unknown-none | ✓ |
+| RISC-V32     | riscv32ima[f]c-unknown-none-elf | ✓ |
+| RISC-V64     | riscv64[gc/imac]-unknown-none-elf | ✓ |
 
-构建系统会自动从 RT-Thread 配置中检测正确的目标。
+The build system will automatically detect the correct target from the RT-Thread configuration.
 
-## MSH 命令
+## MSH Commands
 
-| 命令 | 描述 |
-|------|------|
-| `rust_hello` | 打印问候信息 |
+| Command | Description |
+|---------|-------------|
+| `rust_hello` | Print greeting message |
+| `rust_add <a> <b>` | Add two numbers |
+| `rust_mul <a> <b>` | Multiply two numbers |
+| `rust_strlen <str>` | Calculate string length |
+| `rust_printf_demo` | Printf formatting demo |
+| `rust_memory_demo` | Memory operation demo |
+| `rust_thread_demo` | Thread demo |
+| `rust_vec_demo` | Vec container demo |
+| `rust_dl_demo` | Dynamic module loading demo |
 
-## 配置选项
+## Configuration Options
 
-通过 `menuconfig` 配置：
+Configure via `menuconfig`:
 
-- `RT_USING_RUST` - 启用/禁用 Rust 组件
-- `RUST_DEBUG_BUILD` - 使用调试符号构建
-- `RUST_EXAMPLE_*` - 启用特定示例
-- `RUST_INIT_COMPONENT` - 启动时自动初始化
+- `RT_USING_RUST` - Enable/disable Rust component
+- `RUST_DEBUG_BUILD` - Build with debug symbols
+- `RUST_EXAMPLE_*` - Enable specific examples
+- `RUST_INIT_COMPONENT` - Auto-initialize at startup
 
+## Technical Details
 
-## 扩展组件
+- **No-std**: Embedded-friendly `#![no_std]` environment
+- **FFI**: Seamless C/Rust interoperability
+- **Static linking**: Generates `.a` library files
+- **Memory safety**: Rust's compile-time guarantees
+- **Zero cost**: Performance equivalent to C
 
-通过以下方式添加新功能：
+## Extending the Component
 
-1. 在 `src/` 中创建模块
-2. 在 `src/examples/` 中添加示例
-3. 在 `rust_cmd.c` 中注册命令
+To add new features:
 
-## 故障排除
+1. Create a module in `src/`
+2. Add an example in `src/examples/`
+3. Register the command in `rust_cmd.c`
 
-### 链接错误
+## Application Scenarios
 
-如果遇到 "can't link double-float modules with soft-float modules" 错误：
-- 构建系统应该自动检测正确的 ABI
-- 检查编译器的 `-mabi` 标志是否与 Rust 目标匹配
+The Rust component is especially suitable for:
 
-### 目标未安装
+- **Safety-critical code**: Leverage Rust's memory safety guarantees
+- **Complex algorithms**: Utilize Rust's advanced abstraction capabilities
+- **Device drivers**: Type-safe hardware abstraction
+- **Network protocol stacks**: Safe packet processing
+- **Cryptography libraries**: Secure implementations preventing memory leaks
 
-如果提示目标未安装：
+## Troubleshooting
+
+### Linker Errors
+
+If you encounter "can't link double-float modules with soft-float modules" errors:
+- The build system should automatically detect the correct ABI
+- Check if the compiler's `-mabi` flag matches the Rust target
+
+### Target Not Installed
+
+If prompted that the target is not installed:
 ```bash
-rustup target add <目标名称>
+rustup target add <target-name>
 ```
 
-## 参考资料
+### Detection Failure
 
-- [Rust 嵌入式编程手册](https://docs.rust-embedded.org/)
-- [RT-Thread 文档中心](https://www.rt-thread.org/document/site/)
-- [Rust FFI 编程](https://doc.rust-lang.org/nomicon/ffi.html)
-- [RISC-V 规范](https://riscv.org/technical/specifications/)
+If the target architecture cannot be detected:
+- Check if the RT-Thread configuration is correct
+- Review the compiler flags in `rtconfig.py`
+
+## License
+
+Apache-2.0
+
+## References
+
+- [Rust Embedded Programming Book](https://docs.rust-embedded.org/)
+- [RT-Thread Documentation Center](https://www.rt-thread.org/document/site/)
+- [Rust FFI Programming](https://doc.rust-lang.org/nomicon/ffi.html)
+- [RISC-V Specification](https://riscv.org/technical/specifications/)
