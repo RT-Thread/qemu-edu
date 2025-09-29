@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2024-09-23     foxglove    libdl bindings
+ * 2025-09-23     foxglove    libdl bindings
  */
 
 //! POSIX libdl API bindings for RT-Thread

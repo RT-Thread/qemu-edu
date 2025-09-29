@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2024-09-25     foxglove     test vec operations
+ * 2025-09-25     foxglove     test vec operations
  */
 /// A minimal vector backed by C malloc/realloc/free and memcpy.
 /// Only supports `T: Copy` and no drop semantics for elements.

@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2024-09-25     foxglove     test thread operations
+ * 2025-09-25     foxglove     test thread operations
  */
 
 // RT-Thread thread operation examples - demonstrates thread creation, synchronization and other operations

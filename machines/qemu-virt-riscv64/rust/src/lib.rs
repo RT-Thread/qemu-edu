@@ -5,8 +5,8 @@
  *
  * Change Logs:
  * Date           Author       notes
- * 2024-09-15     foxglove     1.0 version
- * 2024-09-25     foxglove     1.1 version
+ * 2025-09-15     foxglove     1.0 version
+ * 2025-09-25     foxglove     1.1 version
  */
 
 #![no_std]
