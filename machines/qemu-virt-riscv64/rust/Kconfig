@@ -19,6 +19,41 @@ if RT_USING_RUST
         default y
         help
             Enable the basic hello world example function.
+    config RUST_EXAMPLE_MEMORY
+        bool "Enable memory operations examples"
+        default y
+        help
+            Enable memory allocation and operation examples.
+
+    config RUST_EXAMPLE_STRING
+        bool "Enable string operations examples"
+        default y
+        help
+            Enable string manipulation examples.
+
+    config RUST_EXAMPLE_PRINTF
+        bool "Enable printf examples"
+        default y
+        help
+            Enable formatted output examples.
+
+    config RUST_EXAMPLE_THREAD
+        bool "Enable RT-Thread threading examples"
+        default y
+        help
+            Enable RT-Thread threading API examples.
+    
+    config RUST_EXAMPLE_VEC
+        bool "Enable vector examples"
+        default y
+        help
+            Enable vector examples.
+
+    config RUST_EXAMPLE_DL
+        bool "Enable libdl examples"
+        default y
+        help
+            Enable libdl examples.
 
     config RUST_INIT_COMPONENT
         bool "Auto-initialize Rust component"
