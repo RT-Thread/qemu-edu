@@ -1,0 +1,181 @@
+import os
+import subprocess
+
+
+def _parse_cflags(cflags: str):
+    info = {
+        "march": None,
+        "mabi": None,
+        "rv_bits": None,  # 32 or 64
+        "has_f": False,
+        "has_d": False,
+    }
+
+    if not cflags:
+        return info
+
+    parts = cflags.split()
+    for flag in parts:
+        if flag.startswith("-march="):
+            info["march"] = flag.split("=", 1)[1]
+            if "rv32" in info["march"]:
+                info["rv_bits"] = 32
+            elif "rv64" in info["march"]:
+                info["rv_bits"] = 64
+            # crude feature detection
+            m = info["march"]
+            if m:
+                info["has_f"] = ("f" in m)
+                info["has_d"] = ("d" in m)
+        elif flag.startswith("-mabi="):
+            info["mabi"] = flag.split("=", 1)[1]
+            if info["mabi"] in ("ilp32d", "ilp32f", "lp64d", "lp64f"):
+                # floating-point ABI implies FPU availability
+                info["has_f"] = True
+                info["has_d"] = info["mabi"].endswith("d")
+
+    return info
+
+
+def detect_rust_target(has, rtconfig):
+    """
+    Decide the Rust target triple based on RT-Thread Kconfig and rtconfig.*.
+    `has` is a callable: has("SYMBOL") -> bool
+    """
+    # RISC-V
+    if has("ARCH_RISCV32") or has("ARCH_RISCV64"):
+        cflags = getattr(rtconfig, "CFLAGS", "")
+        info = _parse_cflags(cflags)
+
+        # fallback to Kconfig hint if march not present
+        rv_bits = info["rv_bits"] or (32 if has("ARCH_RISCV32") else 64)
+
+        # ABI must carry f/d to actually use hard-float calling convention
+        abi = info["mabi"] or ""
+        abi_has_fp = abi.endswith("f") or abi.endswith("d")
+        has_fpu = has("ARCH_RISCV_FPU") or has("ENABLE_FPU") or info["has_f"] or info["has_d"]
+
+        if rv_bits == 32:
+            # Only pick *f* target when ABI uses hard-float; otherwise use soft-float even if core has F/D
+            return "riscv32imafc-unknown-none-elf" if abi_has_fp else "riscv32imac-unknown-none-elf"
+        else:
+            # rv64: prefer gc (includes fd) only when ABI uses hard-float
+            return "riscv64gc-unknown-none-elf" if abi_has_fp else "riscv64imac-unknown-none-elf"
+
+    # Fallback by ARCH string or CFLAGS
+    arch = getattr(rtconfig, "ARCH", None)
+    if arch:
+        arch_l = arch.lower()
+        if "riscv32" in arch_l:
+            return "riscv32imac-unknown-none-elf"
+        if "riscv64" in arch_l or "risc-v" in arch_l:
+            # Many BSPs use "risc-v" token; assume 64-bit for virt64
+            return "riscv64imac-unknown-none-elf"
+
+    # Parse CFLAGS for hints
+    cflags = getattr(rtconfig, "CFLAGS", "")
+    if "-march=rv32" in cflags:
+        return "riscv32imafc-unknown-none-elf" if ("f" in cflags or "d" in cflags) else "riscv32imac-unknown-none-elf"
+    if "-march=rv64" in cflags:
+        if ("-mabi=lp64d" in cflags) or ("-mabi=lp64f" in cflags) or ("f" in cflags) or ("d" in cflags):
+            return "riscv64gc-unknown-none-elf"
+        return "riscv64imac-unknown-none-elf"
+
+    return None
+
+
+def make_rustflags(rtconfig, target: str):
+    rustflags = [
+        "-C", "opt-level=z",
+        "-C", "panic=abort",
+        "-C", "relocation-model=static",
+    ]
+
+    if "riscv" in target:
+        rustflags += [
+            "-C", "code-model=medium",
+            "-C", "link-dead-code",
+        ]
+        # propagate march/mabi for consistency (use link-arg for staticlib builds – harmless)
+        cflags = getattr(rtconfig, "CFLAGS", "")
+        for flag in cflags.split():
+            if flag.startswith("-march=") or flag.startswith("-mabi="):
+                rustflags += ["-C", f"link-arg={flag}"]
+
+    return " ".join(rustflags)
+
+
+def collect_features(has):
+    feats = []
+    if has("RUST_EXAMPLE_HELLO"):
+        feats.append("example_hello")
+    return feats
+
+
+def verify_rust_toolchain():
+    try:
+        r1 = subprocess.run(["rustc", "--version"], capture_output=True, text=True)
+        r2 = subprocess.run(["cargo", "--version"], capture_output=True, text=True)
+        return r1.returncode == 0 and r2.returncode == 0
+    except Exception:
+        return False
+
+
+def ensure_rust_target_installed(target: str):
+    try:
+        result = subprocess.run(["rustup", "target", "list", "--installed"], capture_output=True, text=True)
+        if result.returncode == 0 and target in result.stdout:
+            return True
+        print(f"Rust target '{target}' is not installed.")
+        print(f"Please install it with: rustup target add {target}")
+    except Exception:
+        print("Warning: Failed to check rustup target list (rustup missing?)")
+    return False
+
+
+def cargo_build_staticlib(rust_dir: str, target: str, features, debug: bool, rustflags: str = None):
+    build_root = os.path.join(os.path.abspath(os.path.join(rust_dir, os.pardir)), "build", "rust")
+    target_dir = os.path.join(build_root, "target")
+    os.makedirs(build_root, exist_ok=True)
+
+    env = os.environ.copy()
+    if rustflags:
+        prev = env.get("RUSTFLAGS", "").strip()
+        env["RUSTFLAGS"] = (prev + " " + rustflags).strip() if prev else rustflags
+    env["CARGO_TARGET_DIR"] = target_dir
+
+    cmd = ["cargo", "build", "--target", target, "--manifest-path", os.path.join(rust_dir, "Cargo.toml")]
+    if not debug:
+        cmd.insert(2, "--release")
+    if features:
+        cmd += ["--no-default-features", "--features", ",".join(features)]
+
+    print("Building Rust component (cargo)…")
+    res = subprocess.run(cmd, cwd=rust_dir, env=env, capture_output=True, text=True)
+    if res.returncode != 0:
+        print("Warning: Rust build failed")
+        if res.stderr:
+            print(res.stderr)
+        return None
+
+    mode = "debug" if debug else "release"
+    lib_path = os.path.join(target_dir, target, mode, "librt_rust.a")
+    if os.path.exists(lib_path):
+        print("Rust component built successfully")
+        return lib_path
+    print("Warning: Library not found at expected location")
+    return None
+
+
+def clean_rust_build(bsp_root: str):
+    build_dir = os.path.join(bsp_root, "build", "rust")
+    if os.path.exists(build_dir):
+        print("Cleaning Rust build artifacts…")
+        import shutil
+        try:
+            shutil.rmtree(build_dir)
+            print("Rust build artifacts cleaned")
+        except Exception as e:
+            print(f"Warning: Failed to clean Rust artifacts: {e}")
+    else:
+        print("No Rust build artifacts to clean")
