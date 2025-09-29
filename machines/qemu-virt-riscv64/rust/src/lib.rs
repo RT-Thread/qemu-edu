@@ -83,6 +83,16 @@ mod example_vec {
 #[cfg(feature = "example_vec")]
 pub use example_vec::*;
 
+#[cfg(feature = "example_dl")]
+mod example_dl {
+    use crate::libc;
+    use crate::libdl;
+    use core::ffi::{c_char, c_void, c_int};
+    include!("examples/dl_demo.rs");
+}
+#[cfg(feature = "example_dl")]
+pub use example_dl::*;
+
 // Re-export initialization function
 pub use init::rust_init;
 
