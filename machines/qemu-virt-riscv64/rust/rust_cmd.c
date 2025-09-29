@@ -71,6 +71,14 @@ extern void rust_vec_demo(void);
 extern void rust_vec_demo_all(void);
 #endif
 
+/* dl_demo module */
+#ifdef RUST_EXAMPLE_DL
+extern void rust_dl_open_demo(void);
+extern void rust_dl_sym_demo(void);
+extern void rust_dl_call_demo(void);
+extern void rust_dl_error_demo(void);
+extern void rust_dl_demo_all(void);
+#endif
 /* ============== MSH command implementation ============== */
 
 /* Basic command: hello */
@@ -229,7 +237,43 @@ static int cmd_rust_thread(int argc, char **argv)
 }
 MSH_CMD_EXPORT_ALIAS(cmd_rust_thread, rust_thread, RT-Thread operations demo);
 #endif
-
+/* dl_demo module */
+#ifdef RUST_EXAMPLE_DL
+static int cmd_rust_dl(int argc, char **argv)
+{
+    if (argc == 1)
+    {
+        rust_dl_demo_all();
+    }
+    else if (strcmp(argv[1], "open") == 0)
+    {
+        rust_dl_open_demo();
+    }
+    else if (strcmp(argv[1], "sym") == 0)
+    {
+        rust_dl_sym_demo();
+    }
+    else if (strcmp(argv[1], "call") == 0)
+    {
+        rust_dl_call_demo();
+    }
+    else if (strcmp(argv[1], "error") == 0)
+    {
+        rust_dl_error_demo();
+    }
+    else
+    {
+        printf("Usage: rust_dl [open|sym|call|error]\n");
+        printf("  Without arguments: run all demos\n");
+        printf("  open  - demonstrate dlopen/dlclose\n");
+        printf("  sym   - demonstrate dlsym symbol resolution\n");
+        printf("  call  - demonstrate function calls through dlsym\n");
+        printf("  error - demonstrate error handling\n");
+    }
+    return 0;
+}
+MSH_CMD_EXPORT_ALIAS(cmd_rust_dl, rust_dl, Demonstrate libdl operations);
+#endif
 /* Printf demonstration */
 #ifdef RUST_EXAMPLE_PRINTF
 static int cmd_rust_printf(int argc, char **argv)
@@ -326,6 +370,9 @@ static int cmd_rust_help(int argc, char **argv)
     printf("  rust_help            - Show this help\n");
     #ifdef RUST_EXAMPLE_VEC
     printf("  rust_vec             - Vector operations demo\n");
+    #endif
+    #ifdef RUST_EXAMPLE_DL
+    printf("  rust_dl              - Dynamic library operations demo\n");
     #endif
     return 0;
 }
