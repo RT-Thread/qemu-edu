@@ -56,7 +56,7 @@ rustup target add thumbv7em-none-eabi
 
 ```bash
 # 在 menuconfig 中启用 Rust 组件
-menuconfig
+scons --menuconfig
 # 导航至：Rust Component Support → Enable
 
 # 动态模块需要打开加载动态模块配置和文件系统：

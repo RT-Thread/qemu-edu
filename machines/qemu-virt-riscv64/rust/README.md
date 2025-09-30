@@ -56,7 +56,7 @@ rustup target add thumbv7em-none-eabi
 
 ```bash
 # Enable Rust component in menuconfig
-menuconfig
+scons --menuconfig
 # Navigate to: Rust Component Support → Enable
 
 # For dynamic modules, enable dynamic module config and file system:
