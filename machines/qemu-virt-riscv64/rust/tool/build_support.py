@@ -42,6 +42,28 @@ def detect_rust_target(has, rtconfig):
     Decide the Rust target triple based on RT-Thread Kconfig and rtconfig.*.
     `has` is a callable: has("SYMBOL") -> bool
     """
+        # ARM Cortex-M
+    if has("ARCH_ARM"):
+        # FPU hints from flags/macros
+        cflags = getattr(rtconfig, "CFLAGS", "")
+        hard_float = "-mfloat-abi=hard" in cflags or has("ARCH_ARM_FPU") or has("ARCH_FPU_VFP")
+
+        if has("ARCH_ARM_CORTEX_M3"):
+            return "thumbv7m-none-eabi"
+        if has("ARCH_ARM_CORTEX_M4") or has("ARCH_ARM_CORTEX_M7"):
+            return "thumbv7em-none-eabihf" if hard_float else "thumbv7em-none-eabi"
+        if has("ARCH_ARM_CORTEX_M33"):
+            # v8m.main
+            return "thumbv8m.main-none-eabi"
+        if has("ARCH_ARM_CORTEX_A"):
+            return "armv7a-none-eabi"
+
+    # AArch64
+    if has("ARCH_AARCH64") or has("ARCH_ARMV8") or has("ARCH_ARM64"):
+        if has("ARCH_CPU_FLOAT_ABI_SOFT"):
+            return "aarch64-unknown-none-softfloat"
+        return "aarch64-unknown-none"
+    
     # RISC-V
     if has("ARCH_RISCV32") or has("ARCH_RISCV64"):
         cflags = getattr(rtconfig, "CFLAGS", "")
@@ -66,6 +88,10 @@ def detect_rust_target(has, rtconfig):
     arch = getattr(rtconfig, "ARCH", None)
     if arch:
         arch_l = arch.lower()
+        if "aarch64" in arch_l:
+            return "aarch64-unknown-none"
+        if "arm" == arch_l or "armv7" in arch_l:
+            return "armv7a-none-eabi"
         if "riscv32" in arch_l:
             return "riscv32imac-unknown-none-elf"
         if "riscv64" in arch_l or "risc-v" in arch_l:
@@ -74,6 +100,12 @@ def detect_rust_target(has, rtconfig):
 
     # Parse CFLAGS for hints
     cflags = getattr(rtconfig, "CFLAGS", "")
+    if "-mcpu=cortex-m3" in cflags:
+        return "thumbv7m-none-eabi"
+    if "-mcpu=cortex-m4" in cflags or "-mcpu=cortex-m7" in cflags:
+        if "-mfpu=" in cflags and "-mfloat-abi=hard" in cflags:
+            return "thumbv7em-none-eabihf"
+        return "thumbv7em-none-eabi"
     if "-march=rv32" in cflags:
         return "riscv32imafc-unknown-none-elf" if ("f" in cflags or "d" in cflags) else "riscv32imac-unknown-none-elf"
     if "-march=rv64" in cflags:
@@ -102,6 +134,9 @@ def make_rustflags(rtconfig, target: str):
             if flag.startswith("-march=") or flag.startswith("-mabi="):
                 rustflags += ["-C", f"link-arg={flag}"]
 
+    if "thumb" in target or "aarch64" in target:
+        rustflags += ["-C", "link-arg=-nostartfiles"]
+
     return " ".join(rustflags)
 
 
@@ -109,6 +144,18 @@ def collect_features(has):
     feats = []
     if has("RUST_EXAMPLE_HELLO"):
         feats.append("example_hello")
+    if has("RUST_EXAMPLE_MEMORY"):
+        feats.append("example_memory")
+    if has("RUST_EXAMPLE_STRING"):
+        feats.append("example_string")
+    if has("RUST_EXAMPLE_PRINTF"):
+        feats.append("example_printf")
+    if has("RUST_EXAMPLE_THREAD"):
+        feats.append("example_thread")
+    if has("RUST_EXAMPLE_VEC"):
+        feats.append("example_vec")
+    if has("RUST_EXAMPLE_DL"):
+        feats.append("example_dl")
     return feats
 
 
