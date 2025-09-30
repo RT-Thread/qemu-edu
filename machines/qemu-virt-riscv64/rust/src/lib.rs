@@ -18,6 +18,7 @@ use core::ffi::{c_void, c_char};
 // Core modules
 pub mod libc;
 pub mod librt;
+pub mod libdl;
 pub mod init;
 
 // Example modules are gated by Cargo features so they can be toggled from Kconfig
@@ -88,7 +89,7 @@ mod example_dl {
     use crate::libc;
     use crate::libdl;
     use core::ffi::{c_char, c_void, c_int};
-    include!("examples/dl_demo.rs");
+    include!("examples/dlmodule_demo.rs");
 }
 #[cfg(feature = "example_dl")]
 pub use example_dl::*;

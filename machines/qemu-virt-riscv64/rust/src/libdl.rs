@@ -30,3 +30,110 @@ extern "C" {
 pub fn last_error_ptr() -> *const c_char {
     unsafe { dlerror() }
 }
+
+// ============== Rust-friendly safe wrappers ==============
+
+/// Dynamic library handle wrapper for safe resource management
+pub struct DlHandle {
+    handle: *mut c_void,
+}
+
+impl DlHandle {
+    /// Open a dynamic library safely
+    pub fn open(filename: &[u8], flags: c_int) -> Result<Self, &'static str> {
+        // Use the safe_dlopen function for consistency
+        safe_dlopen(filename, flags)
+    }
+    
+    /// Get symbol from the dynamic library safely
+    pub fn get_symbol(&self, symbol: &[u8]) -> Result<*mut c_void, &'static str> {
+        // Use the safe_dlsym function for consistency
+        safe_dlsym(self.handle, symbol)
+    }
+    
+    /// Get a function pointer from the dynamic library
+    /// This is a convenience method that combines get_symbol with transmute
+    pub fn get_function<F>(&self, symbol: &[u8]) -> Result<F, &'static str> {
+        let sym = self.get_symbol(symbol)?;
+        Ok(unsafe { core::mem::transmute_copy(&sym) })
+    }
+    
+    /// Try to call a function with no arguments
+    /// Returns the function pointer if found, None if not found
+    pub fn try_call_no_args(&self, symbol: &[u8]) -> Result<extern "C" fn(), &'static str> {
+        self.get_function(symbol)
+    }
+    
+    /// Try to call a main-style function
+    /// Returns the function pointer if found
+    pub fn try_call_main(&self, symbol: &[u8]) -> Result<extern "C" fn(c_int, *mut *mut c_char) -> c_int, &'static str> {
+        self.get_function(symbol)
+    }
+    
+    /// Get the raw handle (for compatibility with existing code)
+    pub fn raw_handle(&self) -> *mut c_void {
+        self.handle
+    }
+}
+
+impl Drop for DlHandle {
+    fn drop(&mut self) {
+        if !self.handle.is_null() {
+            // Use safe_dlclose for consistency, but ignore the result in Drop
+            let _ = safe_dlclose(self.handle);
+        }
+    }
+}
+
+/// Safe dlopen wrapper
+pub fn safe_dlopen(filename: &[u8], flags: c_int) -> Result<DlHandle, &'static str> {
+    let handle = unsafe { dlopen(filename.as_ptr() as *const c_char, flags) };
+    
+    if handle.is_null() {
+        // For embedded environment, use static error message
+        Err("Failed to open dynamic library")
+    } else {
+        Ok(DlHandle { handle })
+    }
+}
+
+/// Safe dlsym wrapper (requires valid handle)
+pub fn safe_dlsym(handle: *mut c_void, symbol: &[u8]) -> Result<*mut c_void, &'static str> {
+    if handle.is_null() {
+        return Err("Invalid handle");
+    }
+    
+    let sym = unsafe { dlsym(handle, symbol.as_ptr() as *const c_char) };
+    
+    if sym.is_null() {
+        // For embedded environment, use static error message
+        Err("Failed to find symbol in dynamic library")
+    } else {
+        Ok(sym)
+    }
+}
+
+/// Safe dlclose wrapper
+pub fn safe_dlclose(handle: *mut c_void) -> Result<(), c_int> {
+    if handle.is_null() {
+        return Err(-1);
+    }
+    
+    let result = unsafe { dlclose(handle) };
+    if result == 0 {
+        Ok(())
+    } else {
+        Err(result)
+    }
+}
+
+/// Safe dlerror wrapper - returns error message as static string
+pub fn safe_dlerror() -> Option<&'static str> {
+    let error_ptr = unsafe { dlerror() };
+    if error_ptr.is_null() {
+        None
+    } else {
+        // For embedded environment, return generic error message
+        Some("Dynamic library error occurred")
+    }
+}
