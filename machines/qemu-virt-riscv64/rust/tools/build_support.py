@@ -152,6 +152,14 @@ def collect_features(has):
         feats.append("example_printf")
     if has("RUST_EXAMPLE_THREAD"):
         feats.append("example_thread")
+    if has("RUST_EXAMPLE_MUTEX"):
+        feats.append("example_mutex")
+    if has("RUST_EXAMPLE_SEM"):
+        feats.append("example_sem")
+    if has("RUST_EXAMPLE_MQ"):
+        feats.append("example_mq")
+    if has("RT_USING_SMP"):
+        feats.append("smp")
     if has("RUST_EXAMPLE_VEC"):
         feats.append("example_vec")
     if has("RUST_EXAMPLE_DL"):

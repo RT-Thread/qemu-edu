@@ -24,6 +24,7 @@ pub type rt_thread_t = *mut c_void;
 pub type rt_sem_t = *mut c_void;
 pub type rt_mutex_t = *mut c_void;
 pub type rt_device_t = *mut c_void;
+pub type rt_mq_t = *mut c_void;
 
 // RT-Thread error codes
 pub const RT_EOK: rt_err_t = 0;
@@ -81,7 +82,14 @@ extern "C" {
     pub fn rt_mutex_take(mutex: rt_mutex_t, time: rt_tick_t) -> rt_err_t;
     pub fn rt_mutex_release(mutex: rt_mutex_t) -> rt_err_t;
 }
-
+extern "C" {
+    pub fn rt_mq_create(name: *const c_char, msg_size: rt_size_t, max_msgs: rt_size_t, flag: u8) -> rt_mq_t;
+    pub fn rt_mq_send(mq: rt_mq_t, buffer: *const c_void, size: rt_size_t) -> rt_err_t;
+    pub fn rt_mq_send_wait(mq: rt_mq_t, buffer: *const c_void, size: rt_size_t, timeout: c_int) -> rt_err_t;
+    pub fn rt_mq_recv(mq: rt_mq_t, buffer: *mut c_void, size: rt_size_t, timeout: c_int) -> rt_base_t;
+    pub fn rt_mq_delete(mq: rt_mq_t) -> rt_err_t;
+    pub fn rt_mq_detach(mq: rt_mq_t) -> rt_err_t;
+}
 // ============== Memory management ==============
 extern "C" {
     pub fn rt_malloc(size: rt_size_t) -> *mut c_void;
@@ -121,6 +129,18 @@ extern "C" {
 // ============== Debug output ==============
 extern "C" {
     pub fn rt_kprintf(fmt: *const u8, ...) -> c_int;
+    pub fn rt_kputs(str: *const u8) -> c_int;
+}
+
+// ============== Interrupt management ==============
+extern "C" {
+    pub fn rt_hw_interrupt_disable() -> rt_base_t;
+    pub fn rt_hw_interrupt_enable(level: rt_base_t);
+    pub fn rt_cpus_lock() -> rt_base_t;
+    pub fn rt_cpus_unlock(level: rt_base_t);
+    pub fn rt_interrupt_enter();
+    pub fn rt_interrupt_leave();
+    pub fn rt_interrupt_get_nest() -> u8;
 }
 
 // ============== Rust-friendly wrappers ==============

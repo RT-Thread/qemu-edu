@@ -62,7 +62,32 @@ extern void rust_thread_create_demo(void);
 extern void rust_thread_self_demo(void);
 extern void rust_thread_sleep_demo(void);
 extern void rust_thread_wrapper_demo(void);
+extern void rust_thread_concurrent_demo(void);
 extern void rust_thread_demo_all(void);
+#endif
+
+/* mutex_demo module */
+#ifdef RUST_EXAMPLE_MUTEX
+extern void rust_mutex_basic_demo(void);
+extern void rust_mutex_named_demo(void);
+extern void rust_mutex_trylock_demo(void);
+extern void rust_mutex_atomic_demo(void);
+extern void rust_mutex_concurrent_demo(void);
+extern void rust_mutex_types_demo(void);
+extern void rust_mutex_demo_all(void);
+#endif
+
+/* sem_demo module */
+#ifdef RUST_EXAMPLE_SEM
+extern void rust_semaphore_basic_demo(void);
+extern void rust_semaphore_producer_consumer_demo(void);
+extern void rust_semaphore_multi_thread_demo(void);
+extern void rust_semaphore_demo_all(void);
+#endif
+
+/* mq_demo module */
+#ifdef RUST_EXAMPLE_MQ
+extern void rust_mq_demo(void);
 #endif
 
 /* vec_demo module */
@@ -224,18 +249,112 @@ static int cmd_rust_thread(int argc, char **argv)
     {
         rust_thread_wrapper_demo();
     }
+    else if (strcmp(argv[1], "concurrent") == 0)
+    {
+        rust_thread_concurrent_demo();
+    }
     else
     {
-        printf("Usage: rust_thread [create|self|sleep|wrapper]\n");
+        printf("Usage: rust_thread [create|self|sleep|wrapper|concurrent]\n");
         printf("  Without arguments: run all demos\n");
         printf("  create  - demonstrate thread creation\n");
         printf("  self    - show current thread info\n");
         printf("  sleep   - demonstrate thread sleep\n");
         printf("  wrapper - demonstrate Rust thread wrapper\n");
+        printf("  concurrent - demonstrate multiple threads concurrent execution\n");
     }
     return 0;
 }
 MSH_CMD_EXPORT_ALIAS(cmd_rust_thread, rust_thread, RT-Thread operations demo);
+#endif
+
+/* Mutex demonstration */
+#ifdef RUST_EXAMPLE_MUTEX
+static int cmd_rust_mutex(int argc, char **argv)
+{
+    if (argc == 1)
+    {
+        rust_mutex_demo_all();
+    }
+    else if (strcmp(argv[1], "basic") == 0)
+    {
+        rust_mutex_basic_demo();
+    }
+    else if (strcmp(argv[1], "named") == 0)
+    {
+        rust_mutex_named_demo();
+    }
+    else if (strcmp(argv[1], "trylock") == 0)
+    {
+        rust_mutex_trylock_demo();
+    }
+    else if (strcmp(argv[1], "atomic") == 0)
+    {
+        rust_mutex_atomic_demo();
+    }
+    else if (strcmp(argv[1], "concurrent") == 0)
+    {
+        rust_mutex_concurrent_demo();
+    }
+    else if (strcmp(argv[1], "types") == 0)
+    {
+        rust_mutex_types_demo();
+    }
+    else
+    {
+        printf("Usage: rust_mutex [basic|named|trylock|atomic|concurrent|types]\n");
+        printf("  basic      - Basic mutex creation and lock/unlock\n");
+        printf("  named      - Named mutex example\n");
+        printf("  trylock    - Try lock with timeout example\n");
+        printf("  atomic     - Atomic mutex for interrupt context\n");
+        printf("  concurrent - Multi-threaded mutex contention\n");
+        printf("  types      - Sleep vs Atomic mutex comparison\n");
+        printf("  (no args)  - Run all mutex demos\n");
+    }
+    return 0;
+}
+MSH_CMD_EXPORT_ALIAS(cmd_rust_mutex, rust_mutex, RT-Thread mutex operations demo);
+#endif
+
+/* sem_demo module */
+#ifdef RUST_EXAMPLE_SEM
+static int cmd_rust_sem(int argc, char **argv)
+{
+    if (argc == 1)
+    {
+        rust_semaphore_demo_all();
+    }
+    else if (strcmp(argv[1], "basic") == 0)
+    {
+        rust_semaphore_basic_demo();
+    }
+    else if (strcmp(argv[1], "producer_consumer") == 0)
+    {
+        rust_semaphore_producer_consumer_demo();
+    }
+    else if (strcmp(argv[1], "multi_thread") == 0)
+    {
+        rust_semaphore_multi_thread_demo();
+    }
+    else
+    {
+        printf("Usage: rust_sem [basic|producer_consumer|multi_thread]\n");
+        printf("  basic - Basic semaphore creation and wait/signal\n");
+        printf("  producer_consumer - Producer-Consumer semaphore demo\n");
+        printf("  multi_thread - Multiple threads synchronization demo\n");
+        printf("  (no args) - Run all semaphore demos\n");
+    }
+    return 0;
+}
+MSH_CMD_EXPORT_ALIAS(cmd_rust_sem, rust_sem, RT-Thread semaphore operations demo);
+#endif
+#ifdef RUST_EXAMPLE_MQ
+static int cmd_rust_mq(int argc, char **argv)
+{
+    rust_mq_demo();
+    return 0;
+}
+MSH_CMD_EXPORT_ALIAS(cmd_rust_mq, rust_mq, RT-Thread message queue operations demo);
 #endif
 /* dl_demo module */
 #ifdef RUST_EXAMPLE_DL
@@ -365,6 +484,15 @@ static int cmd_rust_help(int argc, char **argv)
     #endif
     #ifdef RUST_EXAMPLE_THREAD
     printf("  rust_thread [opt]    - Thread operations demo\n");
+    #endif
+    #ifdef RUST_EXAMPLE_MUTEX
+    printf("  rust_mutex  [opt]    - Mutex operations demo\n");
+    #endif
+    #ifdef RUST_EXAMPLE_SEM
+    printf("  rust_sem  [opt]      - Semaphore operations demo\n");
+    #endif
+    #ifdef RUST_EXAMPLE_MQ
+    printf("  rust_mq              - Message queue operations demo\n");
     #endif
     printf("  rust_test            - Run test suite\n");
     printf("  rust_help            - Show this help\n");

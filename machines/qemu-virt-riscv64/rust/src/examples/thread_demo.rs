@@ -8,128 +8,148 @@
  * 202-09-25     foxglove     test thread operations
  */
 
-// RT-Thread thread operation examples - demonstrates thread creation, synchronization and other operations
+// RT-Thread thread operation examples - demonstrates safe Rust thread interface
 
-/// Thread entry function
-extern "C" fn thread_entry(param: *mut c_void) {
-    let id = param as usize;
-    unsafe {
-        libc::printf(b"[Thread %d] Started\n\0".as_ptr(), id);
-        
-        // 执行一些任务
-        for i in 0..3 {
-            libc::printf(b"[Thread %d] Working... step %d\n\0".as_ptr(), id, i + 1);
-            librt::rt_thread_mdelay(100); // 休眠100ms
-        }
-        
-        libc::printf(b"[Thread %d] Finished\n\0".as_ptr(), id);
-    }
-}
+use crate::thread::Thread;
+use crate::println;
+use alloc::string::String;
+use alloc::format;
 
-/// Thread creation example
+/// Thread creation example using Thread::spawn
 #[no_mangle]
 pub extern "C" fn rust_thread_create_demo() {
-    unsafe {
-        libc::printf(b"\n=== RT-Thread Create Demo ===\n\0".as_ptr());
-        
-        // 创建线程
-        let thread = librt::rt_thread_create(
-            b"rust_thread\0".as_ptr() as *const libc::c_char,
-            thread_entry,
-            1 as *mut c_void,  // Pass thread ID as parameter
-            2048,              // Stack size
-            20,                // Priority
-            10,                // Time slice
-        );
-        
-        if thread.is_null() {
-            libc::printf(b"Failed to create thread!\n\0".as_ptr());
-            return;
-        }
-        
-        libc::printf(b"Thread created successfully\n\0".as_ptr());
-        
-        // 启动线程
-        let ret = librt::rt_thread_startup(thread);
-        if ret == librt::RT_EOK {
-            libc::printf(b"Thread started successfully\n\0".as_ptr());
-        } else {
-            libc::printf(b"Failed to start thread: %d\n\0".as_ptr(), ret);
-        }
-        
-        // 主线程等待一段时间
-        librt::rt_thread_mdelay(500);
-    }
-}
-
-/// Current thread information example
-#[no_mangle]
-pub extern "C" fn rust_thread_self_demo() {
-    unsafe {
-        libc::printf(b"\n=== Current Thread Info ===\n\0".as_ptr());
-        
-        let current = librt::rt_thread_self();
-        if !current.is_null() {
-            libc::printf(b"Current thread handle: %p\n\0".as_ptr(), current);
+    println!("\n=== Rust Thread Create Demo ===");
+    
+    // 使用Thread::spawn创建线程
+    match Thread::spawn(
+        String::from("rust_thread"),
+        2048,  // Stack size
+        20,    // Priority
+        10,    // Time slice
+        move || {
+            println!("[Thread 1] Started");
             
-            // 获取当前tick
-            let tick = librt::rt_tick_get();
-            libc::printf(b"Current system tick: %u\n\0".as_ptr(), tick);
-            
-            // 线程让出CPU
-            libc::printf(b"Yielding CPU...\n\0".as_ptr());
-            librt::rt_thread_yield();
-            libc::printf(b"Resumed after yield\n\0".as_ptr());
-        }
-    }
-}
-
-/// Thread sleep example
-#[no_mangle]
-pub extern "C" fn rust_thread_sleep_demo() {
-    unsafe {
-        libc::printf(b"\n=== Thread Sleep Demo ===\n\0".as_ptr());
-        
-        libc::printf(b"Sleeping for 1 second...\n\0".as_ptr());
-        librt::rt_thread_mdelay(1000);
-        libc::printf(b"Woke up after 1 second\n\0".as_ptr());
-        
-        // 使用tick方式休眠
-        let ticks = librt::rt_tick_from_millisecond(500);
-        libc::printf(b"Sleeping for %u ticks (500ms)...\n\0".as_ptr(), ticks);
-        librt::rt_thread_delay(ticks);
-        libc::printf(b"Woke up after 500ms\n\0".as_ptr());
-    }
-}
-
-/// Using Rust-wrapped thread API
-#[no_mangle]
-pub extern "C" fn rust_thread_wrapper_demo() {
-    unsafe {
-        libc::printf(b"\n=== Thread Wrapper Demo ===\n\0".as_ptr());
-        
-        if let Some(thread) = librt::Thread::create(
-            b"rust_wrap\0",
-            thread_entry,
-            2 as *mut c_void,
-            2048,
-            20,
-            10,
-        ) {
-            libc::printf(b"Thread created using Rust wrapper\n\0".as_ptr());
-            
-            if thread.startup().is_ok() {
-                libc::printf(b"Thread started successfully\n\0".as_ptr());
-            } else {
-                libc::printf(b"Failed to start thread\n\0".as_ptr());
+            // 执行一些任务
+            for i in 0..3 {
+                println!("[Thread 1] Working... step {}", i + 1);
+                Thread::ms_delay(100); // 休眠100ms
             }
             
-            // 等待线程完成
-            librt::thread_sleep_ms(500);
-        } else {
-            libc::printf(b"Failed to create thread using wrapper\n\0".as_ptr());
+            println!("[Thread 1] Finished");
+        }
+    ) {
+        Ok(_thread) => {
+            println!("Thread created and started successfully");
+            
+            // 主线程等待一段时间
+            Thread::ms_delay(500);
+        }
+        Err(e) => {
+            println!("Failed to create thread: {:?}", e);
         }
     }
+}
+
+/// Current thread operations example
+#[no_mangle]
+pub extern "C" fn rust_thread_self_demo() {
+    println!("\n=== Current Thread Operations ===");
+    
+    // 线程让出CPU
+    println!("Yielding CPU...");
+    Thread::r#yield();
+    println!("Resumed after yield");
+}
+
+/// Thread sleep example using Thread delay methods
+#[no_mangle]
+pub extern "C" fn rust_thread_sleep_demo() {
+    println!("\n=== Thread Sleep Demo ===");
+    
+    println!("Sleeping for 1 second...");
+    Thread::ms_delay(1000);
+    println!("Woke up after 1 second");
+    
+    // 使用tick方式休眠
+    println!("Sleeping for 50 ticks...");
+    Thread::delay(50);
+    println!("Woke up after 50 ticks");
+}
+
+/// Using ThreadBuilder API
+#[no_mangle]
+pub extern "C" fn rust_thread_wrapper_demo() {
+    println!("\n=== ThreadBuilder Demo ===");
+    
+    // 使用ThreadBuilder创建线程
+    match Thread::new()
+        .name("rust_builder")
+        .stack_size(4096)
+        .priority(15)
+        .ticks(20)
+        .start(move || {
+            println!("[Thread 2] Started with ThreadBuilder");
+            
+            for i in 0..5 {
+                println!("[Thread 2] Builder task step {}", i + 1);
+                Thread::ms_delay(80);
+            }
+            
+            println!("[Thread 2] ThreadBuilder task completed");
+        }) {
+        Ok(_thread) => {
+            println!("Thread created using ThreadBuilder successfully");
+            
+            // 等待线程完成
+            Thread::ms_delay(600);
+        }
+        Err(e) => {
+            println!("Failed to create thread using ThreadBuilder: {:?}", e);
+        }
+    }
+}
+
+/// Multiple threads concurrent execution demo
+#[no_mangle]
+pub extern "C" fn rust_thread_concurrent_demo() {
+    println!("\n=== Concurrent Threads Demo ===");
+    
+    let mut threads = alloc::vec::Vec::new();
+    
+    // 创建多个并发线程
+    for i in 0..3 {
+        match Thread::spawn(
+            format!("worker_{}", i),
+            2048,
+            20 + i as u8,  // 不同优先级
+            10,
+            move || {
+                println!("[Worker {}] Starting concurrent task", i);
+                
+                for step in 0..4 {
+                    println!("[Worker {}] Step {} executing", i, step + 1);
+                    Thread::ms_delay(150 + i * 50); // 不同的延时
+                }
+                
+                println!("[Worker {}] Concurrent task completed", i);
+            }
+        ) {
+            Ok(thread) => {
+                threads.push(thread);
+                println!("Worker thread {} created successfully", i);
+            }
+            Err(e) => {
+                println!("Failed to create worker thread {}: {:?}", i, e);
+            }
+        }
+    }
+    
+    println!("All worker threads created, waiting for completion...");
+    
+    // 等待所有线程完成
+    Thread::ms_delay(2000);
+    
+    println!("Concurrent demo completed");
 }
 
 /// Comprehensive thread operations demonstration
@@ -139,4 +159,5 @@ pub extern "C" fn rust_thread_demo_all() {
     rust_thread_sleep_demo();
     rust_thread_create_demo();
     rust_thread_wrapper_demo();
+    rust_thread_concurrent_demo();
 }

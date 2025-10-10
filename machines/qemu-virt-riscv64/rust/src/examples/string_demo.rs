@@ -34,7 +34,12 @@ pub extern "C" fn rust_strcpy_demo() {
     
     unsafe {
         libc::strcpy(dest.as_mut_ptr() as *mut c_char, src.as_ptr() as *const c_char);
-        libc::printf(b"Copied string: %s\n\0".as_ptr(), dest.as_ptr());
+        let dest_str = core::ffi::CStr::from_ptr(dest.as_ptr() as *const c_char);
+        if let Ok(s) = dest_str.to_str() {
+            println!("Copied string: {}", s);
+        } else {
+            println!("Copied string: [invalid UTF-8]");
+        }
     }
 }
 
@@ -53,7 +58,12 @@ pub extern "C" fn rust_strcat_demo() {
     let part2 = b"RT-Thread!\0";
     unsafe {
         libc::strcat(buffer.as_mut_ptr() as *mut c_char, part2.as_ptr() as *const c_char);
-        libc::printf(b"Concatenated string: %s\n\0".as_ptr(), buffer.as_ptr());
+        let buffer_str = core::ffi::CStr::from_ptr(buffer.as_ptr() as *const c_char);
+        if let Ok(s) = buffer_str.to_str() {
+            println!("Concatenated string: {}", s);
+        } else {
+            println!("Concatenated string: [invalid UTF-8]");
+        }
     }
 }
 
@@ -71,26 +81,40 @@ pub extern "C" fn rust_strstr_demo(haystack: *const c_char, needle: *const c_cha
 /// Comprehensive string operations demonstration
 #[no_mangle]
 pub extern "C" fn rust_string_demo_all() {
+    println!("\n=== String Operations Demo ===");
+    
     unsafe {
-        libc::printf(b"\n=== String Operations Demo ===\n\0".as_ptr());
-        
         // 长度计算
         let test_str = b"RT-Thread\0";
         let len = libc::strlen(test_str.as_ptr() as *const c_char);
-        libc::printf(b"Length of '%s': %zu\n\0".as_ptr(), test_str.as_ptr(), len);
+        let test_str_rust = core::ffi::CStr::from_ptr(test_str.as_ptr() as *const c_char);
+        if let Ok(s) = test_str_rust.to_str() {
+            println!("Length of '{}': {}", s, len);
+        } else {
+            println!("Length of [invalid UTF-8]: {}", len);
+        }
         
         // 字符串比较
         let str1 = b"abc\0";
         let str2 = b"abd\0";
         let cmp = libc::strcmp(str1.as_ptr() as *const c_char, str2.as_ptr() as *const c_char);
-        libc::printf(b"strcmp('%s', '%s') = %d\n\0".as_ptr(), 
-                    str1.as_ptr(), str2.as_ptr(), cmp);
+        let str1_rust = core::ffi::CStr::from_ptr(str1.as_ptr() as *const c_char);
+        let str2_rust = core::ffi::CStr::from_ptr(str2.as_ptr() as *const c_char);
+        if let (Ok(s1), Ok(s2)) = (str1_rust.to_str(), str2_rust.to_str()) {
+            println!("strcmp('{}', '{}') = {}", s1, s2, cmp);
+        } else {
+            println!("strcmp([invalid UTF-8], [invalid UTF-8]) = {}", cmp);
+        }
         
         // 字符查找
         let ch = b'd' as i32;
         let found = libc::strchr(str2.as_ptr() as *const c_char, ch);
         if !found.is_null() {
-            libc::printf(b"Found '%c' in '%s'\n\0".as_ptr(), ch, str2.as_ptr());
+            if let Ok(s2) = str2_rust.to_str() {
+                println!("Found '{}' in '{}'", ch as u8 as char, s2);
+            } else {
+                println!("Found '{}' in [invalid UTF-8]", ch as u8 as char);
+            }
         }
     }
 }

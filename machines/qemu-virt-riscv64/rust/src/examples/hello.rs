@@ -13,9 +13,7 @@
 /// Simple hello function
 #[no_mangle]
 pub extern "C" fn rust_hello() {
-    unsafe {
-        libc::printf(b"Hello from Rust!\n\0".as_ptr());
-    }
+    println!("Hello from Rust!");
 }
 
 /// Hello function with name parameter
@@ -25,9 +23,12 @@ pub extern "C" fn rust_hello_with_name(name: *const libc::c_char) {
         rust_hello();
     } else {
         unsafe {
-            libc::printf(b"Hello, \0".as_ptr());
-            libc::printf(name as *const u8);
-            libc::printf(b"!\n\0".as_ptr());
+            let name_str = core::ffi::CStr::from_ptr(name);
+            if let Ok(name_str) = name_str.to_str() {
+                println!("Hello, {}!", name_str);
+            } else {
+                println!("Hello, [invalid UTF-8]!");
+            }
         }
     }
 }

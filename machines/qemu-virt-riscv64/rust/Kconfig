@@ -42,6 +42,24 @@ if RT_USING_RUST
         default y
         help
             Enable RT-Thread threading API examples.
+
+    config RUST_EXAMPLE_MUTEX
+        bool "Enable mutex examples"
+        default y
+        help
+            Enable mutex examples.
+            
+    config RUST_EXAMPLE_SEM
+        bool "Enable semaphore examples"
+        default y
+        help
+            Enable semaphore examples.
+            
+    config RUST_EXAMPLE_MQ
+        bool "Enable message queue examples"
+        default y
+        help
+            Enable message queue examples.
     
     config RUST_EXAMPLE_VEC
         bool "Enable vector examples"

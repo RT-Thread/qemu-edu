@@ -19,11 +19,33 @@ pub const RTLD_NOW: c_int = 0x0002;    // Immediate function call binding
 pub const RTLD_GLOBAL: c_int = 0x0100; // Make symbols globally available
 pub const RTLD_LOCAL: c_int = 0;       // Default local
 
+#[cfg(feature = "rt_using_dlopen")]
 extern "C" {
     pub fn dlopen(filename: *const c_char, flag: c_int) -> *mut c_void;
     pub fn dlsym(handle: *mut c_void, symbol: *const c_char) -> *mut c_void;
     pub fn dlclose(handle: *mut c_void) -> c_int;
     pub fn dlerror() -> *const c_char;
+}
+
+// Stub implementations when dynamic library support is not available
+#[cfg(not(feature = "rt_using_dlopen"))]
+pub unsafe fn dlopen(_filename: *const c_char, _flag: c_int) -> *mut c_void {
+    core::ptr::null_mut()
+}
+
+#[cfg(not(feature = "rt_using_dlopen"))]
+pub unsafe fn dlsym(_handle: *mut c_void, _symbol: *const c_char) -> *mut c_void {
+    core::ptr::null_mut()
+}
+
+#[cfg(not(feature = "rt_using_dlopen"))]
+pub unsafe fn dlclose(_handle: *mut c_void) -> c_int {
+    -1
+}
+
+#[cfg(not(feature = "rt_using_dlopen"))]
+pub unsafe fn dlerror() -> *const c_char {
+    b"Dynamic library support not available\0".as_ptr() as *const c_char
 }
 
 /// Return last error as pointer (C string). Caller ensures non-null before use.

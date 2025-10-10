@@ -48,11 +48,11 @@ pub extern "C" fn rust_memset_demo() {
         libc::memset(second_half, b'B' as i32, 16);
         
         // 打印结果
-        libc::printf(b"Buffer after memset: \0".as_ptr());
+        print!("Buffer after memset: ");
         for i in 0..32 {
-            libc::putchar(buffer[i] as i32);
+            print!("{}", buffer[i] as char);
         }
-        libc::printf(b"\n\0".as_ptr());
+        println!();
     }
 }
 
@@ -69,53 +69,53 @@ pub extern "C" fn rust_memcmp_demo() {
             buf2.as_ptr() as *const c_void,
             5,
         );
-        libc::printf(b"memcmp(buf1, buf2) = %d (should be 0)\n\0".as_ptr(), result1);
+        println!("memcmp(buf1, buf2) = {} (should be 0)", result1);
         
         let result2 = libc::memcmp(
             buf1.as_ptr() as *const c_void,
             buf3.as_ptr() as *const c_void,
             5,
         );
-        libc::printf(b"memcmp(buf1, buf3) = %d (should be negative)\n\0".as_ptr(), result2);
+        println!("memcmp(buf1, buf3) = {} (should be negative)", result2);
     }
 }
 
 /// Standard C library malloc/free example
 #[no_mangle]
 pub extern "C" fn rust_malloc_demo() {
+    println!("\n=== Standard C malloc/free Demo ===");
+    
     unsafe {
-        libc::printf(b"\n=== Standard C malloc/free Demo ===\n\0".as_ptr());
-        
         // 分配内存
         let size = 100;
         let ptr = libc::malloc(size);
         
         if ptr.is_null() {
-            libc::printf(b"malloc failed!\n\0".as_ptr());
+            println!("malloc failed!");
             return;
         }
         
-        libc::printf(b"Allocated %zu bytes at %p\n\0".as_ptr(), size, ptr);
+        println!("Allocated {} bytes at {:p}", size, ptr);
         
         // 使用内存
         libc::memset(ptr, 0x42, size);
         
         // 释放内存
         libc::free(ptr);
-        libc::printf(b"Memory freed\n\0".as_ptr());
+        println!("Memory freed");
     }
 }
 
 /// RT-Thread memory allocation example
 #[no_mangle]
 pub extern "C" fn rust_rt_malloc_demo() {
+    println!("\n=== RT-Thread malloc/free Demo ===");
+    
     unsafe {
-        libc::printf(b"\n=== RT-Thread malloc/free Demo ===\n\0".as_ptr());
-        
         // 使用RT-Thread的内存分配
         let size = 64;
         if let Some(ptr) = librt::rt_safe_malloc(size) {
-            libc::printf(b"RT-Thread allocated %zu bytes at %p\n\0".as_ptr(), size, ptr);
+            println!("RT-Thread allocated {} bytes at {:p}", size, ptr);
             
             // 使用内存
             let buffer = ptr as *mut u8;
@@ -128,13 +128,13 @@ pub extern "C" fn rust_rt_malloc_demo() {
             for i in 0..size {
                 sum += *buffer.add(i) as u32;
             }
-            libc::printf(b"Data sum: %u\n\0".as_ptr(), sum);
+            println!("Data sum: {}", sum);
             
             // 释放内存
             librt::rt_safe_free(ptr);
-            libc::printf(b"RT-Thread memory freed\n\0".as_ptr());
+            println!("RT-Thread memory freed");
         } else {
-            libc::printf(b"RT-Thread malloc failed!\n\0".as_ptr());
+            println!("RT-Thread malloc failed!");
         }
     }
 }

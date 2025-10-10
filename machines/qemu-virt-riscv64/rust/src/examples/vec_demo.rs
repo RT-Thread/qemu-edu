@@ -5,100 +5,89 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2025-09-25     foxglove     test vec operations
+ * 2025-09-25     foxglove     test vec operations with GlobalAllocator
  */
-/// A minimal vector backed by C malloc/realloc/free and memcpy.
-/// Only supports `T: Copy` and no drop semantics for elements.
-struct CVec<T: Copy> {
-    ptr: *mut T,
-    len: usize,
-    cap: usize,
-}
 
-impl<T: Copy> CVec<T> {
-    fn new() -> Self {
-        CVec { ptr: core::ptr::null_mut(), len: 0, cap: 0 }
-    }
+// Imports are handled by the parent module
 
-    fn with_capacity(cap: usize) -> Self {
-        if cap == 0 {
-            return Self::new();
-        }
-        let bytes = cap.saturating_mul(mem::size_of::<T>());
-        let raw = unsafe { libc::malloc(bytes) } as *mut T;
-        if raw.is_null() {
-            CVec { ptr: core::ptr::null_mut(), len: 0, cap: 0 }
-        } else {
-            CVec { ptr: raw, len: 0, cap }
-        }
-    }
-
-    fn len(&self) -> usize { self.len }
-    fn capacity(&self) -> usize { self.cap }
-    fn as_ptr(&self) -> *const T { self.ptr as *const T }
-    fn as_mut_ptr(&mut self) -> *mut T { self.ptr }
-
-    fn grow(&mut self) -> bool {
-        let new_cap = if self.cap == 0 { 4 } else { self.cap.saturating_mul(2) };
-        let new_bytes = new_cap.saturating_mul(mem::size_of::<T>());
-
-        let new_ptr = if self.ptr.is_null() {
-            unsafe { libc::malloc(new_bytes) as *mut T }
-        } else {
-            unsafe { libc::realloc(self.ptr as *mut c_void, new_bytes) as *mut T }
-        };
-
-        if new_ptr.is_null() {
-            return false;
-        }
-        self.ptr = new_ptr;
-        self.cap = new_cap;
-        true
-    }
-
-    fn push(&mut self, value: T) -> bool {
-        if self.len == self.cap {
-            if !self.grow() { return false; }
-        }
-        unsafe { ptr::write(self.ptr.add(self.len), value); }
-        self.len += 1;
-        true
-    }
-
-    fn pop(&mut self) -> Option<T> {
-        if self.len == 0 { return None; }
-        self.len -= 1;
-        let value = unsafe { ptr::read(self.ptr.add(self.len)) };
-        Some(value)
-    }
-
-    fn get(&self, index: usize) -> Option<T> {
-        if index >= self.len { return None; }
-        Some(unsafe { ptr::read(self.ptr.add(index)) })
-    }
-}
-
-impl<T: Copy> Drop for CVec<T> {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { libc::free(self.ptr as *mut c_void); }
-        }
-        self.ptr = core::ptr::null_mut();
-        self.len = 0;
-        self.cap = 0;
-    }
-}
 #[no_mangle]
 pub extern "C" fn rust_vec_demo() {
-    unsafe { libc::printf(b"\n=== CVec Demo ===\n\0".as_ptr()); }
-    let mut v: CVec<u32> = CVec::with_capacity(2);
+    println!("\n=== Standard Vec Demo with GlobalAllocator ===");
+    
+    // Create a Vec with initial capacity
+    let mut v: Vec<u32> = Vec::with_capacity(2);
+    println!("Created Vec with capacity: {}", v.capacity());
+    
+    // Push elements
     for i in 1..=5u32 {
-        let ok = v.push(i);
-        unsafe { libc::printf(b"push %u -> %s\n\0".as_ptr(), i, if ok { b"ok\0".as_ptr() } else { b"fail\0".as_ptr() }); }
+        v.push(i);
+        println!("push {} -> ok", i);
     }
-    unsafe { libc::printf(b"len=%zu cap=%zu\n\0".as_ptr(), v.len(), v.capacity()); }
-    for i in 0..v.len() {
-        let val = v.get(i).unwrap_or(0);
-        unsafe { libc::printf(b"v[%zu]=%u\n\0".as_ptr(), i, val); }
+    
+    println!("len={} cap={}", v.len(), v.capacity());
+    
+    // Print all elements
+    for (index, &value) in v.iter().enumerate() {
+        println!("v[{}]={}", index, value);
     }
+    
+    // Test pop operation
+    println!("\nTesting pop operations:");
+    while let Some(value) = v.pop() {
+        println!("popped: {}, remaining len: {}", value, v.len());
+    }
+    
+    // Test Vec methods
+    println!("\nTesting Vec methods:");
+    v.extend_from_slice(&[10, 20, 30, 40, 50]);
+    println!("After extend_from_slice: len={}", v.len());
+    
+    // Test indexing
+    if let Some(&value) = v.get(2) {
+        println!("v[2] = {}", value);
+    }
+    
+    // Test clear
+    v.clear();
+    println!("After clear: len={}, cap={}", v.len(), v.capacity());
+    
+    println!("Vec demo completed!");
+}
+
+#[no_mangle]
+pub extern "C" fn rust_vec_advanced_demo() {
+    println!("\n=== Advanced Vec Operations Demo ===");
+    
+    // Test Vec<String> (if we had String support)
+    let mut numbers: Vec<i32> = Vec::new();
+    
+    // Test reserve
+    numbers.reserve(10);
+    println!("After reserve(10): cap={}", numbers.capacity());
+    
+    // Fill with data
+    for i in 0..10 {
+        numbers.push(i * i);
+    }
+    
+    // Test retain
+    numbers.retain(|&x| x % 2 == 0);
+    println!("After retain (even numbers only): len={}", numbers.len());
+    
+    for (i, &num) in numbers.iter().enumerate() {
+        println!("numbers[{}] = {}", i, num);
+    }
+    
+    // Test insert and remove
+    numbers.insert(0, 999);
+    println!("After insert(0, 999): first element = {}", numbers[0]);
+    
+    let removed = numbers.remove(0);
+    println!("Removed element: {}", removed);
+    
+    // Test shrink_to_fit
+    numbers.shrink_to_fit();
+    println!("After shrink_to_fit: len={}, cap={}", numbers.len(), numbers.capacity());
+    
+    println!("Advanced Vec demo completed!");
 }
