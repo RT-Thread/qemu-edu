@@ -10,11 +10,6 @@
 
 // RT-Thread thread operation examples - demonstrates safe Rust thread interface
 
-use crate::thread::Thread;
-use crate::println;
-use alloc::string::String;
-use alloc::format;
-
 /// Thread creation example using Thread::spawn
 #[no_mangle]
 pub extern "C" fn rust_thread_create_demo() {

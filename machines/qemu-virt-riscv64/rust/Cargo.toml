@@ -5,7 +5,7 @@ edition = "2021"
 
 [lib]
 name = "rt_rust"
-crate-type = ["staticlib"]
+crate-type = ["rlib", "staticlib"]
 
 [dependencies]
 
@@ -13,19 +13,15 @@ crate-type = ["staticlib"]
 default = []
 smp = []
 example_hello = []
-
 example_memory = []
-example_string = []
 example_printf = []
 example_thread = []
 example_mutex = []
 example_sem = []
 example_mq = []
-
-
 example_dl = []
-example_vec = []
-rt_using_dlopen = []
+bench_test = []
+
 
 [profile.release]
 lto = true

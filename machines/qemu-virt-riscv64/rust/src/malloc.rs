@@ -10,6 +10,7 @@
 
 use crate::api::mem::{mem_alloc, mem_alloc_aligned, mem_free, mem_free_aligned, mem_realloc};
 use core::alloc::{GlobalAlloc, Layout};
+use crate::panic_on_atomic_context;
 use core::ptr;
 use core::ffi::c_void;
 
@@ -26,6 +27,7 @@ unsafe impl GlobalAlloc for RttAlloc {
     /// This function is unsafe as required by the GlobalAlloc trait.
     /// The caller must ensure proper usage according to GlobalAlloc requirements.
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        panic_on_atomic_context("alloc");
         let size = layout.size();
         let align = layout.align();
         
@@ -56,6 +58,7 @@ unsafe impl GlobalAlloc for RttAlloc {
     /// The caller must ensure the pointer was allocated by this allocator
     /// and the layout matches the original allocation.
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        panic_on_atomic_context("dealloc");
         if ptr.is_null() {
             return;
         }
@@ -76,6 +79,7 @@ unsafe impl GlobalAlloc for RttAlloc {
     /// This function is unsafe as required by the GlobalAlloc trait.
     /// The caller must ensure proper usage according to GlobalAlloc requirements.
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
+        panic_on_atomic_context("realloc");
         // Handle zero-sized new allocation
         if new_size == 0 {
             self.dealloc(ptr, layout);

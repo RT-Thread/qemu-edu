@@ -15,6 +15,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <rtdbg.h>
 
 /* ============== Rust function declarations ============== */
 
@@ -32,16 +35,7 @@ extern void rust_hello_rust_style(void);
 #ifdef RUST_EXAMPLE_PRINTF
 extern void rust_printf_demo(void);
 extern int rust_sprintf_demo(void);
-#endif
-
-/* string_demo module */
-#ifdef RUST_EXAMPLE_STRING
-extern size_t rust_strlen_demo(const char *s);
-extern int rust_strcmp_demo(const char *s1, const char *s2);
-extern void rust_strcpy_demo(void);
-extern void rust_strcat_demo(void);
-extern int rust_strstr_demo(const char *haystack, const char *needle);
-extern void rust_string_demo_all(void);
+extern void rust_vec_demo(void);
 #endif
 
 /* memory_demo module */
@@ -104,6 +98,22 @@ extern void rust_dl_call_demo(void);
 extern void rust_dl_error_demo(void);
 extern void rust_dl_demo_all(void);
 #endif
+/* ==============  bench test implementation ============== */
+#ifdef RUST_BENCH_TEST
+extern void rust_bench_test(void);
+int c_bench(void) {
+    struct timeval tv_begin, tv_end;
+    gettimeofday(&tv_begin,NULL);
+    for (int i = 0; i < 1; i++) {
+	    rt_kprintf("C program: Hello world! %d\n", i);
+    }
+    gettimeofday(&tv_end,NULL);
+    double milisecs = (tv_end.tv_sec - tv_begin.tv_sec) * 1000.0 + (tv_end.tv_usec - tv_begin.tv_usec) / 1000.0;
+    rt_kprintf("Time: %fms\n", milisecs);
+    return 0;
+}
+#endif
+
 /* ============== MSH command implementation ============== */
 
 /* Basic command: hello */
@@ -165,46 +175,6 @@ static int cmd_rust_mul(int argc, char **argv)
 MSH_CMD_EXPORT_ALIAS(cmd_rust_mul, rust_mul, Multiply two numbers using Rust);
 #endif /* RUST_EXAMPLE_MEMORY */
 
-/* String command: strlen */
-#ifdef RUST_EXAMPLE_STRING
-static int cmd_rust_strlen(int argc, char **argv)
-{
-    if (argc < 2)
-    {
-        printf("Usage: rust_strlen <string>\n");
-        return -1;
-    }
-    
-    size_t len = rust_strlen_demo(argv[1]);
-    printf("String '%s' length: %zu\n", argv[1], len);
-    return 0;
-}
-MSH_CMD_EXPORT_ALIAS(cmd_rust_strlen, rust_strlen, Calculate string length);
-
-/* String command: strcmp */
-static int cmd_rust_strcmp(int argc, char **argv)
-{
-    if (argc < 3)
-    {
-        printf("Usage: rust_strcmp <string1> <string2>\n");
-        return -1;
-    }
-    
-    int result = rust_strcmp_demo(argv[1], argv[2]);
-    printf("strcmp('%s', '%s') = %d\n", argv[1], argv[2], result);
-    return 0;
-}
-MSH_CMD_EXPORT_ALIAS(cmd_rust_strcmp, rust_strcmp, Compare two strings);
-
-/* String demonstration */
-static int cmd_rust_string(int argc, char **argv)
-{
-    rust_string_demo_all();
-    return 0;
-}
-MSH_CMD_EXPORT_ALIAS(cmd_rust_string, rust_string, Demonstrate string operations);
-#endif /* RUST_EXAMPLE_STRING */
-
 /* Memory demonstration */
 #ifdef RUST_EXAMPLE_MEMORY
 static int cmd_rust_memory(int argc, char **argv)
@@ -213,16 +183,6 @@ static int cmd_rust_memory(int argc, char **argv)
     return 0;
 }
 MSH_CMD_EXPORT_ALIAS(cmd_rust_memory, rust_memory, Demonstrate memory operations);
-#endif
-
-/* Vector demonstration */
-#ifdef RUST_EXAMPLE_VEC
-static int cmd_rust_vec(int argc, char **argv)
-{
-    rust_vec_demo();
-    return 0;
-}
-MSH_CMD_EXPORT_ALIAS(cmd_rust_vec, rust_vec, Demonstrate vector operations);
 #endif
 
 /* Thread demonstration */
@@ -348,6 +308,7 @@ static int cmd_rust_sem(int argc, char **argv)
 }
 MSH_CMD_EXPORT_ALIAS(cmd_rust_sem, rust_sem, RT-Thread semaphore operations demo);
 #endif
+/* message queue demonstration */
 #ifdef RUST_EXAMPLE_MQ
 static int cmd_rust_mq(int argc, char **argv)
 {
@@ -399,12 +360,25 @@ static int cmd_rust_printf(int argc, char **argv)
 {
     rust_printf_demo();
     rust_sprintf_demo();
+    rust_vec_demo();
     return 0;
 }
 MSH_CMD_EXPORT_ALIAS(cmd_rust_printf, rust_printf, Demonstrate printf operations);
 #endif
 
-/* Comprehensive test command */
+/* bench test command */
+#ifdef RUST_BENCH_TEST
+static int cmd_bench_test(int argc, char **argv)
+{
+    printf("\n=== C & Rust Bench Test ===\n");
+    rust_bench_test();
+    c_bench();
+    return 0;
+}
+MSH_CMD_EXPORT_ALIAS(cmd_bench_test, bench_test, Run Rust bench test);
+#endif
+
+/* test command */
 static int cmd_rust_test(int argc, char **argv)
 {
     printf("\n=== Rust Component Test Suite ===\n");
@@ -426,17 +400,8 @@ static int cmd_rust_test(int argc, char **argv)
     printf("   (printf example disabled)\n");
     #endif
     
-    /* 3. String test */
-    printf("\n3. String Test:\n");
-    #ifdef RUST_EXAMPLE_STRING
-    const char *test_str = "RT-Thread";
-    printf("   strlen(\"%s\") = %zu\n", test_str, rust_strlen_demo(test_str));
-    #else
-    printf("   (string example disabled)\n");
-    #endif
-    
-    /* 4. Arithmetic test */
-    printf("\n4. Arithmetic Test:\n");
+    /* 3. Arithmetic test */
+    printf("\n3. Arithmetic Test:\n");
     #ifdef RUST_EXAMPLE_MEMORY
     printf("   42 + 58 = %d\n", rust_add(42, 58));
     printf("   10 * 20 = %d\n", rust_multiply(10, 20));
@@ -444,8 +409,8 @@ static int cmd_rust_test(int argc, char **argv)
     printf("   (memory/arithmetic example disabled)\n");
     #endif
     
-    /* 5. Memory test */
-    printf("\n5. Memory Test:\n");
+    /* 4. Memory test */
+    printf("\n4. Memory Test:\n");
     #ifdef RUST_EXAMPLE_MEMORY
     char src[] = "Hello";
     char dest[10];
@@ -455,6 +420,46 @@ static int cmd_rust_test(int argc, char **argv)
     }
     #else
     printf("   (memory example disabled)\n");
+    #endif
+
+    /* 5. Thread test */
+    printf("\n5. Thread Test:\n");
+    #ifdef RUST_EXAMPLE_THREAD
+    rust_thread_demo_all();
+    #else
+    printf("   (thread example disabled)\n");
+    #endif
+
+    /* 6. Mutex test */
+    printf("\n6. Mutex Test:\n");
+    #ifdef RUST_EXAMPLE_MUTEX
+    rust_mutex_demo_all();
+    #else
+    printf("   (mutex example disabled)\n");
+    #endif
+
+    /* 7. Semaphore test */
+    printf("\n7. Semaphore Test:\n");
+    #ifdef RUST_EXAMPLE_SEM
+    rust_semaphore_demo_all();
+    #else
+    printf("   (semaphore example disabled)\n");
+    #endif
+
+    /* 8. Message queue test */
+    printf("\n8. Message Queue Test:\n");
+    #ifdef RUST_EXAMPLE_MQ
+    rust_mq_demo();
+    #else
+    printf("   (message queue example disabled)\n");
+    #endif
+    
+    /* 9. Dynamic library test */
+    printf("\n9. Dynamic Library Test:\n");
+    #ifdef RUST_EXAMPLE_DL
+    rust_dl_demo_all();
+    #else
+    printf("   (dynamic library example disabled)\n");
     #endif
     
     printf("\n=== All tests completed ===\n");
@@ -474,11 +479,6 @@ static int cmd_rust_help(int argc, char **argv)
     printf("  rust_mul <n1> <n2>   - Multiply two numbers\n");
     printf("  rust_memory          - Memory operations demo\n");
     #endif
-    #ifdef RUST_EXAMPLE_STRING
-    printf("  rust_strlen <str>    - Get string length\n");
-    printf("  rust_strcmp <s1> <s2> - Compare strings\n");
-    printf("  rust_string          - String operations demo\n");
-    #endif
     #ifdef RUST_EXAMPLE_PRINTF
     printf("  rust_printf          - Printf operations demo\n");
     #endif
@@ -494,14 +494,14 @@ static int cmd_rust_help(int argc, char **argv)
     #ifdef RUST_EXAMPLE_MQ
     printf("  rust_mq              - Message queue operations demo\n");
     #endif
-    printf("  rust_test            - Run test suite\n");
-    printf("  rust_help            - Show this help\n");
-    #ifdef RUST_EXAMPLE_VEC
-    printf("  rust_vec             - Vector operations demo\n");
-    #endif
     #ifdef RUST_EXAMPLE_DL
     printf("  rust_dl              - Dynamic library operations demo\n");
     #endif
+    #ifdef RUST_BENCH_TEST
+    printf("  bench_test            - Benchmark test\n");
+    #endif
+    printf("  rust_test            - Run test suite\n");
+    printf("  rust_help            - Show this help\n");
     return 0;
 }
 MSH_CMD_EXPORT_ALIAS(cmd_rust_help, rust_help, Show Rust component help);
@@ -512,7 +512,6 @@ static int rust_component_init(void)
     int ret = rust_init();
     if (ret == 0)
     {
-        printf("Rust component initialized (modular version)\n");
         printf("Use 'rust_help' to see available commands\n");
     }
     return ret;

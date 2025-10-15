@@ -9,298 +9,236 @@
  */
 
 type NoArgFn = extern "C" fn();
-type AddFn = extern "C" fn(libc::c_int, libc::c_int) -> libc::c_int;
-type MainFn = extern "C" fn(libc::c_int, *mut *mut libc::c_char) -> libc::c_int;
+type AddFn = extern "C" fn(c_int, c_int) -> c_int;
+type MainFn = extern "C" fn(c_int, *mut *mut c_char) -> c_int;
+// 为宏提供 `libloading` 命名空间别名
+use crate::libloader::libloading;
 
-/// Basic dlopen test using safe wrapper
+// 使用宏生成动态库函数的便捷调用封装
+// 注意：路径为字符串，不需要以 NUL 结尾
+/// Basic dlopen test
 #[no_mangle]
 pub extern "C" fn rust_dl_open_demo() {
     unsafe {
-        libc::printf(b"\n=== dlopen Demo ===\n\0".as_ptr());
+        println!("=== dlopen Demo ===");
         
-        let path = b"/hello.mo\0";
-        match libdl::DlHandle::open(path, libdl::RTLD_NOW | libdl::RTLD_GLOBAL) {
-            Ok(handle) => {
-                libc::printf(b"dlopen ok: %p\n\0".as_ptr(), handle.raw_handle());
-                libc::printf(b"Module loaded successfully\n\0".as_ptr());
-                // Handle will be automatically closed when it goes out of scope
-            }
-            Err(error) => {
-                libc::printf(b"dlopen failed: \0".as_ptr());
-                libc::print_str(&error);
-                libc::printf(b"\n\0".as_ptr());
+        let path = b"/libmylib.mo\0";
+        match libloader::dl_open(path.as_ptr() as *const _) {
+            Err(_) => {
+                println!("dlopen failed:");
+                libloader::dl_print_last_error();
+            },
+            Ok(lib) => {
+                println!("Module loaded successfully");
+                match lib.close() {
+                    Ok(()) => println!("dlclose success"),
+                    Err(e) => println!("dlclose failed: {}", e),
+                }
             }
         }
     }
 }
 
-/// dlsym symbol resolution test using safe wrapper
+/// dlsym symbol resolution test
 #[no_mangle]
 pub extern "C" fn rust_dl_sym_demo() {
     unsafe {
-        libc::printf(b"\n=== dlsym Demo ===\n\0".as_ptr());
+        println!("=== dlsym Demo ===");
         
         let path = b"/hello.mo\0";
-        match libdl::DlHandle::open(path, libdl::RTLD_NOW | libdl::RTLD_GLOBAL) {
-            Ok(handle) => {
-                // Try to resolve main symbol
-                let sym_name = b"main\0";
-                match handle.get_symbol(sym_name) {
-                    Ok(sym) => {
-                        libc::printf(b"Found symbol 'main' at %p\n\0".as_ptr(), sym);
-                    }
-                    Err(error) => {
-                        libc::printf(b"dlsym main failed: \0".as_ptr());
-                        libc::print_str(&error);
-                        libc::printf(b"\n\0".as_ptr());
-                    }
-                }
-                
-                // Try to resolve non-existent symbol
-                let bad_sym = b"nonexistent_symbol\0";
-                match handle.get_symbol(bad_sym) {
-                    Ok(_) => {
-                        libc::printf(b"Unexpected: found nonexistent symbol\n\0".as_ptr());
-                    }
-                    Err(error) => {
-                        libc::printf(b"dlsym nonexistent_symbol failed (expected): \0".as_ptr());
-                        libc::print_str(&error);
-                        libc::printf(b"\n\0".as_ptr());
-                    }
-                }
-                // Handle will be automatically closed when it goes out of scope
+        let lib = match libloader::dl_open(path.as_ptr() as *const _) {
+            Err(_) => {
+                println!("dlopen failed:");
+                libloader::dl_print_last_error();
+                return;
             }
-            Err(error) => {
-                libc::printf(b"dlopen failed: \0".as_ptr());
-                libc::print_str(&error);
-                libc::printf(b"\n\0".as_ptr());
+            Ok(lib) => lib,
+        };
+
+        // Try to resolve main symbol
+        let sym_name = b"main\0";
+        match libloader::dl_sym::<MainFn>(&lib, sym_name.as_ptr() as *const _) {
+            Err(_) => {
+                println!("dlsym main failed:");
+                libloader::dl_print_last_error();
+            },
+            Ok(main_sym) => {
+                let ptr: *const c_void = main_sym.as_raw() as *const c_void;
+                println!("Found symbol 'main' at {:p}", ptr);
             }
+        }
+
+        // Try to resolve non-existent symbol
+        let bad_sym = b"nonexistent_symbol\0";
+        match libloader::dl_sym::<NoArgFn>(&lib, bad_sym.as_ptr() as *const _) {
+            Err(_) => {
+                println!("dlsym nonexistent_symbol failed (expected):");
+                libloader::dl_print_last_error();
+            },
+            Ok(_) => println!("Unexpected: found nonexistent symbol"),
+        }
+
+        match lib.close() {
+            Ok(()) => println!("dlclose success"),
+            Err(e) => println!("dlclose failed: {}", e),
         }
     }
 }
 
-/// Function call test through dlsym using safe wrapper
+/// Function call test through dlsym
 #[no_mangle]
 pub extern "C" fn rust_dl_call_demo() {
     unsafe {
-        libc::printf(b"\n=== Function Call Demo ===\n\0".as_ptr());
+        println!("\n=== Function Call Demo ===");
         
-        let path = b"/hello.mo\0";
-        match libdl::DlHandle::open(path, libdl::RTLD_NOW | libdl::RTLD_GLOBAL) {
-            Ok(handle) => {
-                // Call main function - simplified with convenience method
-                let sym_name = b"main\0";
-                match handle.try_call_main(sym_name) {
-                    Ok(main_fn) => {
-                        libc::printf(b"Calling module main()...\n\0".as_ptr());
-                        let rc = main_fn(0, core::ptr::null_mut());
-                        libc::printf(b"module main() returned %d\n\0".as_ptr(), rc);
-                    }
-                    Err(error) => {
-                        libc::printf(b"dlsym main failed: \0".as_ptr());
-                        libc::print_str(&error);
-                        libc::printf(b"\n\0".as_ptr());
-                    }
-                }
-                // Handle will be automatically closed when it goes out of scope
+        let path = b"/libmylib.mo\0";
+        let lib = match libloader::dl_open(path.as_ptr() as *const _) {
+            Err(_) => {
+                println!("dlopen failed:");
+                libloader::dl_print_last_error();
+                return;
             }
-            Err(error) => {
-                libc::printf(b"dlopen failed: \0".as_ptr());
-                libc::print_str(&error);
-                libc::printf(b"\n\0".as_ptr());
+            Ok(lib) => lib,
+        };
+
+        // Call add function
+        let add_sym_name = b"rust_mylib_add\0";
+        match libloader::dl_sym::<AddFn>(&lib, add_sym_name.as_ptr() as *const _) {
+            Err(_) => {
+                println!("dlsym add failed:");
+                libloader::dl_print_last_error();
+            },
+            Ok(add) => {
+                let ptr: *const c_void = add.as_raw() as *const c_void;
+                println!("Found symbol 'add' at {:p}", ptr);
+                println!("Calling add(5, 3)...");
+                let f: AddFn = add.to_value();
+                let result = f(5, 3);
+                println!("add(5, 3) = {}", result);
             }
+        }
+
+        // Call main function (if exists)
+        let sym_name = b"main\0";
+        match libloader::dl_sym::<MainFn>(&lib, sym_name.as_ptr() as *const _) {
+            Err(_) => {
+                println!("dlsym main failed:");
+                libloader::dl_print_last_error();
+            },
+            Ok(main) => {
+                println!("Calling module main()...");
+                let f: MainFn = main.to_value();
+                let rc = f(0, core::ptr::null_mut());
+                println!("module main() returned {}", rc);
+            }
+        }
+
+        match lib.close() {
+            Ok(()) => println!("dlclose success"),
+            Err(e) => println!("dlclose failed: {}", e),
         }
     }
 }
 
-/// Error handling test using safe wrapper
+/// 使用 get_libfn! 宏的演示
+#[no_mangle]
+pub extern "C" fn rust_dl_macro_demo() {
+    println!("\n=== Macro Demo ===");
+
+    // 直接调用宏生成的函数
+    get_libfn!("/hello.mo", "main", my_hello, ());
+    my_hello();
+
+    get_libfn!("/libmylib.mo", "rust_mylib_add", my_add, c_int, a: c_int, b: c_int);
+    let s = my_add(15, 20);
+    println!("my_add(15, 20) = {}", s);
+
+    get_libfn!("/libmylib.mo", "rust_mylib_println", my_println, (), s: *const c_char);
+    my_println(b"rustlib: Hello World\0".as_ptr() as *const c_char);
+}
+
+/// Add function call demonstration
+#[no_mangle]
+pub extern "C" fn rust_dl_add_demo() {
+    unsafe {
+        println!("\n=== Add Function Demo ===");
+        
+        let path = b"/libmylib.mo\0";
+        let lib = match libloader::dl_open(path.as_ptr() as *const _) {
+            Err(_) => {
+                println!("dlopen failed:");
+                libloader::dl_print_last_error();
+                return;
+            }
+            Ok(lib) => lib,
+        };
+
+        // Resolve add function symbol
+        let add_sym_name = b"rust_mylib_add\0";
+        match libloader::dl_sym::<AddFn>(&lib, add_sym_name.as_ptr() as *const _) {
+            Err(_) => {
+                println!("dlsym add failed:");
+                libloader::dl_print_last_error();
+            },
+            Ok(add) => {
+                println!("Successfully loaded add function from dynamic module");
+                let test_cases = [(10, 20), (100, 200), (-5, 15), (0, 42)];
+                for (a, b) in test_cases.iter() {
+                    let f: AddFn = add.to_value();
+                    let result = f(*a, *b);
+                    println!("add({}, {}) = {}", *a, *b, result);
+                }
+            }
+        }
+
+        match lib.close() {
+            Ok(()) => println!("dlclose rc=0"),
+            Err(e) => println!("dlclose failed: {}", e),
+        }
+    }
+}
+
+/// Error handling test
 #[no_mangle]
 pub extern "C" fn rust_dl_error_demo() {
     unsafe {
-        libc::printf(b"\n=== Error Handling Demo ===\n\0".as_ptr());
+        println!("\n=== Error Handling Demo ===");
         
         // Try to open non-existent module
         let bad_path = b"/nonexistent.mo\0";
-        match libdl::DlHandle::open(bad_path, libdl::RTLD_NOW) {
-            Ok(_handle) => {
-                libc::printf(b"Unexpected: loaded nonexistent module\n\0".as_ptr());
-                // Handle will be automatically closed when it goes out of scope
-            }
-            Err(error) => {
-                libc::printf(b"dlopen nonexistent module failed (expected): \0".as_ptr());
-                libc::print_str(&error);
-                libc::printf(b"\n\0".as_ptr());
+        match libloader::dl_open(bad_path.as_ptr() as *const _) {
+            Err(_) => {
+                println!("dlopen nonexistent module failed (expected):");
+                libloader::dl_print_last_error();
+            },
+            Ok(lib) => {
+                println!("Unexpected: loaded nonexistent module");
+                let _ = lib.close();
             }
         }
         
         // Try to open valid module with invalid flags
         let path = b"/hello.mo\0";
-        match libdl::DlHandle::open(path, 0xFFFF) { // Invalid flags
-            Ok(_handle) => {
-                libc::printf(b"dlopen with invalid flags succeeded\n\0".as_ptr());
-                // Handle will be automatically closed when it goes out of scope
-            }
-            Err(error) => {
-                libc::printf(b"dlopen with invalid flags failed: \0".as_ptr());
-                libc::print_str(&error);
-                libc::printf(b"\n\0".as_ptr());
-            }
-        }
-    }
-}
-
-/// Test loading and calling functions from libdlmodule.so
-#[no_mangle]
-pub extern "C" fn rust_dl_libdlmodule_demo() {
-    unsafe {
-        libc::printf(b"\n=== libdlmodule.so Test Demo ===\n\0".as_ptr());
-        
-        let path = b"/libdlmodule.so\0";
-        
-        // Try to load the library
-        libc::printf(b"Attempting to load library...\n\0".as_ptr());
-        
-        match libdl::DlHandle::open(path, libdl::RTLD_NOW | libdl::RTLD_GLOBAL) {
-            Ok(handle) => {
-                libc::printf(b"Successfully loaded libdlmodule.so\n\0".as_ptr());
-                
-                // Try to resolve the 'add' function
-                let add_sym_name = b"add\0";
-                match handle.get_symbol(add_sym_name) {
-                    Ok(sym) => {
-                        libc::printf(b"Found 'add' function at %p\n\0".as_ptr(), sym);
-                        
-                        // Cast the symbol to the correct function type
-                        let add_fn: AddFn = core::mem::transmute(sym);
-                        
-                        // Test the add function with different values
-                        let test_cases = [(5, 3), (10, 20), (-5, 15), (0, 0), (100, -50)];
-                        
-                        libc::printf(b"Testing add function:\n\0".as_ptr());
-                        for (a, b) in test_cases.iter() {
-                            let result = add_fn(*a, *b);
-                            libc::printf(b"  add(%d, %d) = %d\n\0".as_ptr(), *a, *b, result);
-                        }
-                        
-                        // Verify correctness
-                        let verification_result = add_fn(42, 58);
-                        if verification_result == 100 {
-                            libc::printf(b"[OK] Add function works correctly! (42 + 58 = %d)\n\0".as_ptr(), verification_result);
-                        } else {
-                            libc::printf(b"[FAIL] Add function failed verification! Expected 100, got %d\n\0".as_ptr(), verification_result);
-                        }
-                        
-                    }
-                    Err(error) => {
-                        libc::printf(b"Failed to find 'add' function: \0".as_ptr());
-                        libc::print_str(&error);
-                        libc::printf(b"\n\0".as_ptr());
-                    }
-                }
-                
-                // Handle will be automatically closed when it goes out of scope
-            }
-            Err(error) => {
-                libc::printf(b"Failed to load libdlmodule.so: \0".as_ptr());
-                libc::print_str(&error);
-                libc::printf(b"\n\0".as_ptr());
+        match libloader::dl_open_with_flags(path.as_ptr() as *const _, 0xFFFF) {
+            Err(_) => {
+                println!("dlopen with invalid flags failed:");
+                libloader::dl_print_last_error();
+            },
+            Ok(lib) => {
+                println!("dlopen with invalid flags succeeded");
+                let _ = lib.close();
             }
         }
-    }
-}
-
-/// Test multiple operations on libdlmodule.so
-#[no_mangle]
-pub extern "C" fn rust_dl_libdlmodule_stress_test() {
-    unsafe {
-        libc::printf(b"\n=== libdlmodule.so Stress Test ===\n\0".as_ptr());
-        
-        let path = b"/libdlmodule.so\0";
-        
-        // Test multiple load/unload cycles
-        for i in 1..=3 {
-            libc::printf(b"Load cycle %d:\n\0".as_ptr(), i);
-            
-            match libdl::DlHandle::open(path, libdl::RTLD_NOW) {
-                Ok(handle) => {
-                    match handle.get_symbol(b"add\0") {
-                        Ok(sym) => {
-                            let add_fn: AddFn = core::mem::transmute(sym);
-                            let result = add_fn(i * 10, i * 5);
-                            libc::printf(b"  Cycle %d: add(%d, %d) = %d\n\0".as_ptr(), i, i * 10, i * 5, result);
-                            
-                            if result == i * 15 {
-                                libc::printf(b"[OK] Stress test iteration %d: Add function works correctly! (%d + %d = %d)\n\0".as_ptr(), i, i * 10, i * 5, result);
-                            } else {
-                                libc::printf(b"[FAIL] Stress test iteration %d: Add function failed! Expected %d, got %d\n\0".as_ptr(), i, i * 15, result);
-                            }
-                        }
-                        Err(error) => {
-                            libc::printf(b"  Failed to get symbol in cycle %d: \0".as_ptr(), i);
-                            libc::print_str(&error);
-                            libc::printf(b"\n\0".as_ptr());
-                        }
-                    }
-                    // Handle automatically closed here
-                }
-                Err(error) => {
-                    libc::printf(b"  Failed to load in cycle %d: \0".as_ptr(), i);
-                    libc::print_str(&error);
-                    libc::printf(b"\n\0".as_ptr());
-                }
-            }
-        }
-        
-        libc::printf(b"Stress test completed\n\0".as_ptr());
-    }
-}
-
-/// Test different possible paths for libdlmodule.so
-#[no_mangle]
-pub extern "C" fn rust_dl_path_test() {
-    unsafe {
-        libc::printf(b"\n=== Path Test for libdlmodule.so ===\n\0".as_ptr());
-        
-        let paths_to_try: &[&[u8]] = &[
-            b"/libdlmodule.so\0",
-            b"./libdlmodule.so\0",
-            b"/usr/lib/libdlmodule.so\0",
-            b"/lib/libdlmodule.so\0",
-            b"/tmp/libdlmodule.so\0",
-            b"libdlmodule.so\0",
-        ];
-        
-        for path in paths_to_try.iter() {
-            libc::printf(b"\nTesting path: %s\n\0".as_ptr(), path.as_ptr());
-            
-            // Try to load it directly
-            match libdl::DlHandle::open(path, libdl::RTLD_NOW) {
-                Ok(_handle) => {
-                    libc::printf(b"  Successfully loaded!\n\0".as_ptr());
-                    return; // Found working path
-                }
-                Err(error) => {
-                    libc::printf(b"  Failed to load: \0".as_ptr());
-                    libc::print_str(&error);
-                    libc::printf(b"\n\0".as_ptr());
-                }
-            }
-        }
-        
-        libc::printf(b"\nNo working path found for libdlmodule.so\n\0".as_ptr());
     }
 }
 
 /// Comprehensive dl operations demonstration
 #[no_mangle]
 pub extern "C" fn rust_dl_demo_all() {
-    // rust_dl_open_demo();
-    // rust_dl_sym_demo();
-    // rust_dl_call_demo();
-    // rust_dl_error_demo();
-    rust_dl_path_test();
-    rust_dl_libdlmodule_demo();
-    rust_dl_libdlmodule_stress_test();
+    rust_dl_open_demo();
+    rust_dl_sym_demo();
+    rust_dl_call_demo();
+    rust_dl_add_demo();
+    rust_dl_error_demo();
+    rust_dl_macro_demo();
 }
-
-

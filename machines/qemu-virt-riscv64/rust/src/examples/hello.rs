@@ -18,23 +18,19 @@ pub extern "C" fn rust_hello() {
 
 /// Hello function with name parameter
 #[no_mangle]
-pub extern "C" fn rust_hello_with_name(name: *const libc::c_char) {
+pub extern "C" fn rust_hello_with_name(name: *const c_char) {
     if name.is_null() {
         rust_hello();
-    } else {
-        unsafe {
-            let name_str = core::ffi::CStr::from_ptr(name);
-            if let Ok(name_str) = name_str.to_str() {
-                println!("Hello, {}!", name_str);
-            } else {
-                println!("Hello, [invalid UTF-8]!");
-            }
-        }
+        return;
     }
+    let name_str = unsafe { CStr::from_ptr(name) }
+        .to_str()
+        .unwrap_or("[invalid UTF-8]");
+    println!("Hello, {}!", name_str);
 }
 
 /// Print using Rust-style string
 #[no_mangle]
 pub extern "C" fn rust_hello_rust_style() {
-    libc::print_str("Hello from Rust (Rust style)!\n");
+    print!("Hello from Rust (Rust style)!\n");
 }

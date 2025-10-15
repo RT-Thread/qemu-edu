@@ -1,5 +1,5 @@
 use crate::api::*;
-use crate::RTTError;
+use crate::{panic_on_atomic_context, RTTError};
 use alloc::fmt;
 pub use alloc::sync::{Arc, Weak};
 use core::cell::UnsafeCell;
@@ -189,12 +189,14 @@ impl RawMutexOps for AtomicMutex {
 
 impl RawMutexOps for SleepMutex {
     fn create(name: &str) -> Result<Self, RTTError> {
+        panic_on_atomic_context("create");
         mutex_create(name)
             .ok_or(RTTError::OutOfMemory)
             .map(|m| SleepMutex(m))
     }
 
     fn take(&self, max_wait: isize) -> Result<(), RTTError> {
+        panic_on_atomic_context("take");
         let ret = mutex_take(self.0, max_wait);
         if !is_eok(ret) {
             return Err(RTTError::MutexTakeTimeout);
@@ -203,10 +205,12 @@ impl RawMutexOps for SleepMutex {
     }
 
     fn release(&self) {
+        panic_on_atomic_context("release");
         mutex_release(self.0);
     }
 
     fn drop(&mut self) {
+        panic_on_atomic_context("drop");
         mutex_delete(self.0);
     }
 }

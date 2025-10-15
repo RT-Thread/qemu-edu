@@ -5,7 +5,7 @@ pub mod thread;
 pub mod mutex;
 pub mod sem;
 pub mod queue;
-
+pub mod libloading;
 
 
 pub use base::*;
@@ -15,3 +15,4 @@ pub use thread::*;
 pub use mutex::*;
 pub use sem::*;
 pub use queue::*;
+pub use libloading::*;

@@ -143,63 +143,6 @@ extern "C" {
     pub fn rt_interrupt_get_nest() -> u8;
 }
 
-// ============== Rust-friendly wrappers ==============
-
-/// RT-Thread thread handle wrapper
-pub struct Thread {
-    handle: rt_thread_t,
-}
-
-impl Thread {
-    /// Create new thread
-    pub fn create(
-        name: &[u8],
-        entry: extern "C" fn(*mut c_void),
-        param: *mut c_void,
-        stack_size: usize,
-        priority: u8,
-        tick: u32,
-    ) -> Option<Self> {
-        let handle = unsafe {
-            rt_thread_create(
-                name.as_ptr() as *const c_char,
-                entry,
-                param,
-                stack_size as rt_size_t,
-                priority,
-                tick,
-            )
-        };
-        
-        if handle.is_null() {
-            None
-        } else {
-            Some(Thread { handle })
-        }
-    }
-    
-    /// Start thread
-    pub fn startup(&self) -> Result<(), rt_err_t> {
-        let ret = unsafe { rt_thread_startup(self.handle) };
-        if ret == RT_EOK {
-            Ok(())
-        } else {
-            Err(ret)
-        }
-    }
-}
-
-impl Drop for Thread {
-    fn drop(&mut self) {
-        unsafe { rt_thread_delete(self.handle) };
-    }
-}
-
-/// Current thread sleep
-pub fn thread_sleep_ms(ms: u32) {
-    unsafe { rt_thread_mdelay(ms as c_int) };
-}
-
 /// Safe RT-Thread memory allocation
 pub fn rt_safe_malloc(size: usize) -> Option<*mut c_void> {
     if size == 0 {

@@ -1,7 +1,7 @@
 //! Passing information between threads
 
 use crate::api::*;
-use crate::RTTError;
+use crate::{panic_on_atomic_context, RTTError};
 use core::cell::UnsafeCell;
 use core::marker::PhantomData;
 use core::mem::{size_of, MaybeUninit};
@@ -42,10 +42,12 @@ impl<T> Queue<T> {
     }
 
     pub fn send(&self, item: T, max_wait: i32) -> Result<(), (RTTError, T)> {
+        panic_on_atomic_context("send");
         self._send(item, max_wait)
     }
 
     pub fn send_wait_forever(&self, item: T) -> Result<(), (RTTError, T)> {
+        panic_on_atomic_context("send_wait_forever");
         self._send(item, RT_WAITING_FOREVER as _)
     }
 
@@ -69,10 +71,12 @@ impl<T> Queue<T> {
     }
 
     pub fn recv(&self, max_wait: i32) -> Result<T, RTTError> {
+        panic_on_atomic_context("recv");
         self._receive(max_wait)
     }
 
     pub fn recv_wait_forever(&self) -> Result<T, RTTError> {
+        panic_on_atomic_context("recv_wait_forever");
         self._receive(RT_WAITING_FOREVER as _)
     }
 

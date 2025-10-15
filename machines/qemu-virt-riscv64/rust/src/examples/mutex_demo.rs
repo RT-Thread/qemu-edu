@@ -10,13 +10,6 @@
 
 // RT-Thread mutex operation examples - demonstrates safe Rust mutex interface
 
-use crate::mutex::Mutex;
-use crate::thread::Thread;
-use alloc::string::String;
-use alloc::format;
-use alloc::sync::Arc;
-use alloc::vec::Vec;
-
 /// Basic mutex creation and lock/unlock example
 #[no_mangle]
 pub extern "C" fn rust_mutex_basic_demo() {

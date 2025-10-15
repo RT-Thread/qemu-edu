@@ -11,10 +11,14 @@
 
 #![no_std]
 #![allow(non_camel_case_types)]
-#[warn(unused_imports)]
+#![feature(alloc_error_handler)]
+#![feature(linkage)]
+#![feature(core_intrinsics)]
+#![allow(dead_code)]
 
 pub mod bindings;
 pub mod api;
+pub mod libloader;
 pub mod malloc;
 pub mod init;
 pub mod out;
@@ -24,11 +28,10 @@ pub mod mutex;
 pub mod sem;
 pub mod queue;
 pub mod time;
+pub mod param;
 extern crate alloc;
-use core::panic::PanicInfo;
-use core::ffi::c_void;
 use crate::malloc::RttAlloc;
-use crate::bindings::libc;
+
 /// Global allocator instance
 #[global_allocator]
 static ALLOCATOR: RttAlloc = RttAlloc;
@@ -61,10 +64,8 @@ pub type RTResult<T> = Result<T, RTTError>;
 // Each module re-exports its `#[no_mangle]` extern functions when enabled
 #[cfg(feature = "example_hello")]
 mod example_hello {
-    use crate::bindings::libc;
-    use crate::bindings::librt;
     use crate::{print, println};
-    // use core::ffi::{c_char, c_void};
+    use core::ffi::{c_char, CStr};
     include!("examples/hello.rs");
 }
 #[cfg(feature = "example_hello")]
@@ -72,31 +73,18 @@ pub use example_hello::*;
 
 #[cfg(feature = "example_printf")]
 mod example_printf {
-    use crate::bindings::libc;
-    use crate::bindings::librt;
-    use core::ffi::{c_char, c_void};
-    use crate::{print, println};
+    use alloc::vec::Vec;
+    use crate::println;
     include!("examples/printf_demo.rs");
 }
 #[cfg(feature = "example_printf")]
 pub use example_printf::*;
 
-#[cfg(feature = "example_string")]
-mod example_string {
-    use crate::bindings::libc;
-    use crate::bindings::librt; 
-    use core::ffi::{c_char, c_void};
-    use crate::{print, println};
-    include!("examples/string_demo.rs");
-}
-#[cfg(feature = "example_string")]
-pub use example_string::*;
-
 #[cfg(feature = "example_memory")]
 mod example_memory {
     use crate::bindings::libc;
     use crate::bindings::librt;
-    use core::ffi::{c_char, c_void};
+    use core::ffi::c_void;
     use crate::{print, println};
     include!("examples/memory_demo.rs");
 }
@@ -105,9 +93,10 @@ pub use example_memory::*;
 
 #[cfg(feature = "example_thread")]
 mod example_thread {
-    use crate::bindings::libc;
-    use crate::bindings::librt;
-    use core::ffi::{c_char, c_void};
+    use crate::thread::Thread;
+    use crate::println;
+    use alloc::string::String;
+    use alloc::format;
     include!("examples/thread_demo.rs");
 }
 #[cfg(feature = "example_thread")]
@@ -115,10 +104,13 @@ pub use example_thread::*;
 
 #[cfg(feature = "example_mutex")]
 mod example_mutex {
-    use crate::bindings::libc;
-    use crate::bindings::librt;
-    use core::ffi::{c_char, c_void};
-    use crate::{print, println};
+    use crate::mutex::Mutex;
+    use crate::thread::Thread;
+    use crate::println;
+    use alloc::string::String;
+    use alloc::format;
+    use alloc::sync::Arc;
+    use alloc::vec::Vec;
     include!("examples/mutex_demo.rs");
 }
 #[cfg(feature = "example_mutex")]
@@ -126,10 +118,7 @@ pub use example_mutex::*;
 
 #[cfg(feature = "example_sem")]
 mod example_sem {
-    use crate::bindings::libc;
-    use crate::bindings::librt;
-    use core::ffi::{c_char, c_void};
-    use crate::{print, println};
+    use crate::println;
     use crate::sem::Semaphore;
     use crate::thread::Thread;
     use alloc::format;
@@ -140,50 +129,54 @@ mod example_sem {
 #[cfg(feature = "example_sem")]
 pub use example_sem::*;
 
-#[cfg(feature = "example_vec")]
-mod example_vec {
-    use crate::bindings::libc;
-    use crate::bindings::librt;
-    use core::{mem, ptr};
-    use core::ffi::{c_char, c_void};
-    use core::alloc::{GlobalAlloc, Layout};
-    use alloc::vec::Vec;
-    use crate::{print, println};
-    include!("examples/vec_demo.rs");
-}
-#[cfg(feature = "example_vec")]
-pub use example_vec::*;
-
-#[cfg(feature = "example_dl")]
-mod example_dl {
-    use crate::bindings::libc;
-    use crate::bindings::libdl;
-    use core::ffi::{c_char, c_void, c_int};
-    include!("examples/dlmodule_demo.rs");
-}
-#[cfg(feature = "example_dl")]
-pub use example_dl::*;
-
 #[cfg(feature = "example_mq")]
 mod example_mq {
-    use crate::bindings::libc;
-    use crate::bindings::librt;
-    use core::ffi::{c_char, c_void};
-    use crate::{print, println};
+    use crate::println;
     use crate::queue::Queue;
-    use crate::time::sleep;
     include!("examples/mq_demo.rs");
 }
 #[cfg(feature = "example_mq")]
 pub use example_mq::*;
 
+#[cfg(feature = "example_dl")]
+mod example_dl {
+    use crate::{println, get_libfn};
+    use crate::libloader;
+    use core::ffi::{c_int, c_void, c_char};
+    include!("examples/dlmodule_demo.rs");
+}
+#[cfg(feature = "example_dl")]
+pub use example_dl::*;
+
+#[cfg(feature = "bench_test")]
+mod example_bench {
+    use crate::println;
+    use crate::time;
+    include!("examples/rust_bench.rs");
+}
+#[cfg(feature = "bench_test")]
+pub use example_bench::*;
+
 // Re-export initialization function
 pub use init::rust_init;
 
-// Panic handler
+fn panic_on_atomic_context(s: &str) {
+    use core::intrinsics::unlikely;
+    use crate::api::is_irq_context;
+    if unlikely(is_irq_context()) {
+        panic!("In irq context {}", s);
+    }
+}
+
 #[panic_handler]
 #[inline(never)]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     print!("{:}", info);
+    __rust_panic()
+}
+
+#[linkage = "weak"]
+#[no_mangle]
+fn __rust_panic() -> ! {
     loop {}
 }

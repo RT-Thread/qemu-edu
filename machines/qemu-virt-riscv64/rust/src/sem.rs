@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::api::*;
-use crate::RTTError;
+use crate::{panic_on_atomic_context, RTTError};
 use core::cell::UnsafeCell;
 use core::marker::PhantomData;
 
@@ -21,6 +21,7 @@ impl Semaphore {
     }
 
     pub fn new_with_name(name: &str) -> Result<Self, RTTError> {
+        panic_on_atomic_context("new_with_name");
         semaphore_create(name)
             .ok_or(RTTError::OutOfMemory)
             .map(|m| Semaphore {
@@ -38,6 +39,7 @@ impl Semaphore {
     }
 
     pub fn take_wait_forever(&self) -> Result<(), RTTError> {
+        panic_on_atomic_context("sem take_wait_forever");
         let ret = semaphore_take(self.sem, RT_WAITING_FOREVER as u32);
 
         if !is_eok(ret) {
@@ -48,6 +50,7 @@ impl Semaphore {
     }
 
     pub fn take(&self, max_wait: i32) -> Result<(), RTTError> {
+        panic_on_atomic_context("sem take");
         let ret = semaphore_take(self.sem, max_wait as u32);
 
         if !is_eok(ret) {

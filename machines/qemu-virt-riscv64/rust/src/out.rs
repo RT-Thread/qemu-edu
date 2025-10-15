@@ -1,6 +1,6 @@
 //! Provide the output function of debugging serial port
 use crate::puts::puts;
-use crate::bindings::librt::rt_kputs;
+use crate::bindings::librt::rt_kprintf;
 use core::fmt::{self, Write};
 
 struct StdOut;
@@ -8,8 +8,9 @@ struct StdOut;
 impl fmt::Write for StdOut {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         fn rtt_kputs(s: *const u8) {
-            unsafe { 
-                rt_kputs(s);
+            unsafe {
+                // Use kprintf with "%s" format to avoid dependency on rt_kputs symbol
+                rt_kprintf(b"%s\0".as_ptr(), s);
             }
         }
         puts(s, rtt_kputs);
