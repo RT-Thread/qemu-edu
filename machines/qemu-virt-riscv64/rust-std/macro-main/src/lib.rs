@@ -61,7 +61,6 @@ pub fn rtt_main(args: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     let main_func_name = format_ident!("__{}_main_func", arg.appname.as_ref().unwrap());
-    // let main_func_name = format_ident!("main");
 
     let run_seg_name = format_ident!("__{}_run_seg", arg.appname.as_ref().unwrap());
     let run_func_name = format_ident!("__{}_run_func", arg.appname.as_ref().unwrap());
