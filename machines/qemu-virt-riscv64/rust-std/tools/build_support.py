@@ -298,7 +298,10 @@ def make_remap_flags(rustc_path, cur_pkg_dir, app_dir):
     return remap_core + remap_alloc + remap_apps + remap_main
 
 
-def build_cargo_cmd(target, target_installed, cur_pkg_dir):
+def is_debug_build():
+    return _has("RUST_DEBUG_BUILD")
+
+def build_cargo_cmd(target, target_installed, cur_pkg_dir, debug_build):
     CARGO_CMD["out-path"] = CARGO_CMD["out-path"] % os.path.join(cur_pkg_dir, "rust_out")
     CARGO_CMD["target-arch"] = CARGO_CMD["target-arch"] % target
     parts = []
@@ -307,7 +310,8 @@ def build_cargo_cmd(target, target_installed, cur_pkg_dir):
         parts.append(CARGO_CMD["f2"])  # -Z build-std
     parts.append(CARGO_CMD["f3"])  # --target
     parts.append(CARGO_CMD["target-arch"])  # <triple>
-    parts.append(CARGO_CMD["f4"])  # --release
+    if not debug_build:
+        parts.append(CARGO_CMD["f4"])  # --release
     parts.append(CARGO_CMD["out-path"])  # --target-dir=...
     parts.append(CARGO_CMD["f5"])  # --
     if not target_installed and "f6" in CARGO_CMD:
@@ -326,14 +330,11 @@ def run_cargo_build(build_path, rtt_path, rustflags, cargo_cmd):
     return os.system(cmd) == 0
 
 
-def copy_artifact(cur_pkg_dir, target):
-    return os.system(
-        "cp %s %s"
-        % (
-            os.path.join(cur_pkg_dir, ("rust_out/%s/release/librust.a" % target)),
-            os.path.join(cur_pkg_dir, "rust_out"),
-        )
-    ) == 0
+def copy_artifact(cur_pkg_dir, target, debug_build):
+    profile = "debug" if debug_build else "release"
+    src = os.path.join(cur_pkg_dir, f"rust_out/{target}/{profile}/librust.a")
+    dst = os.path.join(cur_pkg_dir, "rust_out")
+    return os.system(f"cp {src} {dst}") == 0
 
 # Refactored PrebuildRust using helpers
 
@@ -356,7 +357,9 @@ def prebuild_rust(cur_pkg_dir, rtconfig, rtt_path, app_dir):
     base_flags = make_rustflags(rtconfig, target)
     all_rust_flag = base_flags + make_remap_flags(rustc_path, cur_pkg_dir, app_dir)
 
-    cargo_cmd = build_cargo_cmd(target, target_installed, cur_pkg_dir)
+    debug_build = is_debug_build()
+
+    cargo_cmd = build_cargo_cmd(target, target_installed, cur_pkg_dir, debug_build)
 
     build_path = os.path.join(cur_pkg_dir, "rust_dummy")
     if not run_cargo_build(build_path, rtt_path, all_rust_flag, cargo_cmd):
@@ -364,7 +367,7 @@ def prebuild_rust(cur_pkg_dir, rtconfig, rtt_path, app_dir):
         print("Rust build: run build command failed.")
         return "ERR"
 
-    if not copy_artifact(cur_pkg_dir, target):
+    if not copy_artifact(cur_pkg_dir, target, debug_build):
         print("Rust build: Copy librust.a failed.")
         return "ERR"
 
