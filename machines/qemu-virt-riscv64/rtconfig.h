@@ -239,7 +239,6 @@
 #define RT_USING_POSIX_DELAY
 #define RT_USING_POSIX_CLOCK
 #define RT_USING_POSIX_TIMER
-#define RT_USING_MODULE
 
 /* Interprocess Communication (IPC) */
 
@@ -431,9 +430,6 @@
 /* Micrium: Micrium software products porting for RT-Thread */
 
 /* end of Micrium: Micrium software products porting for RT-Thread */
-#define PKG_USING_LWEXT4
-#define RT_USING_DFS_LWEXT4
-#define PKG_USING_LWEXT4_LATEST_VERSION
 /* end of system packages */
 
 /* peripheral libraries and drivers */
@@ -568,11 +564,6 @@
 #define BSP_USING_VIRTIO_GPU
 #define BSP_USING_VIRTIO_INPUT
 /* end of RISC-V QEMU virt64 configs */
-#define RT_USING_RUST
-#define RUST_EXAMPLE_HELLO
-#define RUST_EXAMPLE_MEMORY
-#define RUST_EXAMPLE_PRINTF
-#define RUST_INIT_COMPONENT
 #define BOARD_QEMU_VIRT_RV64
 #define ENABLE_FPU
 #define __STACKSIZE__ 16384
