@@ -31,6 +31,7 @@ if PLATFORM == 'gcc':
     SIZE    = PREFIX + 'size'
     OBJDUMP = PREFIX + 'objdump'
     OBJCPY  = PREFIX + 'objcopy'
+    STRIP   = PREFIX + 'strip'
 
     DEVICE  = ' -mcmodel=medany -march=rv64imafdc -mabi=lp64 '
     CFLAGS  = DEVICE + '-ffreestanding -flax-vector-conversions -Wno-cpp -fno-common -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -fdiagnostics-color=always'
@@ -47,6 +48,12 @@ if PLATFORM == 'gcc':
 
     CXXFLAGS = CFLAGS
     CXXFLAGS = CFLAGS
+    CXXFLAGS = CFLAGS
+    M_CFLAGS = CFLAGS + ' -mlong-calls -fPIC '
+    M_CXXFLAGS = CXXFLAGS + ' -mlong-calls -fPIC'
+    M_LFLAGS = DEVICE + CXXFLAGS + ' -Wl,--gc-sections,-z,max-page-size=0x4' +\
+                                ' -shared -fPIC -nostartfiles -nostdlib -static-libgcc'
+    M_POST_ACTION = STRIP + ' -R .hash $TARGET\n' + SIZE + ' $TARGET \n'
 
 DUMP_ACTION = OBJDUMP + ' -D -S $TARGET > rtthread.asm\n'
 POST_ACTION = OBJCPY + ' -O binary $TARGET rtthread.bin\n' + SIZE + ' $TARGET \n'

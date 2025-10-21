@@ -15,7 +15,7 @@
 
 #![allow(non_camel_case_types)]
 
-pub use core::ffi::{c_char, c_int, c_void, c_uint, c_long};
+pub use core::ffi::{c_char, c_int, c_void, c_long};
 
 // RT-Thread libdl typically supports these flags; define minimally used ones
 pub const RTLD_LAZY: c_int = 0x00000;   // Lazy function call binding

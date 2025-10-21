@@ -69,6 +69,12 @@ SECTIONS
         KEEP(*(UtestTcTab))
         __rt_utest_tc_tab_end = .;
 
+        /* section information for modules */
+        . = ALIGN(8); /* for 64-bit system use 8-byte alignment */
+        __rtmsymtab_start = .;
+        KEEP(*(RTMSymTab))
+        __rtmsymtab_end = .;
+ 
         . = ALIGN(8);
         _etext = .;
     } > SRAM

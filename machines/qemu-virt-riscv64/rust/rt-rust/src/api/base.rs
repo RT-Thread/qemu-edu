@@ -67,31 +67,6 @@ impl From<i64> for RttCResult {
     }
 }
 
-impl From<u64> for RttCResult {
-    fn from(a: u64) -> Self {
-        // Convert u64 to i64 for processing
-        // rt_mq_recv returns rt_base_t which can be either positive (success with data size) 
-        // or negative (error code)
-        let signed_val = a as i64;
-        let ret = match signed_val {
-            0 => RttCResult::Ok,
-            -1 => RttCResult::Error,
-            -2 => RttCResult::TimeOut,
-            -3 => RttCResult::Full,
-            -4 => RttCResult::Empty,
-            -5 => RttCResult::NoMem,
-            -6 => RttCResult::NoSys,
-            -7 => RttCResult::Busy,
-            -8 => RttCResult::IO,
-            -9 => RttCResult::INTR,
-            -10 => RttCResult::INVAL,
-            _ if signed_val > 0 => RttCResult::Ok, // Positive values indicate success with data size
-            _ => RttCResult::NotValidCode,
-        };
-        ret
-    }
-}
-
 pub fn is_eok(val: RttCResult) -> bool {
     if let RttCResult::Ok = val {
         true

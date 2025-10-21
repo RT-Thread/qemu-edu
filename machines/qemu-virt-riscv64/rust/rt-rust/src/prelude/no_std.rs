@@ -2,7 +2,6 @@ pub use core::cell::RefCell;
 pub use core::cell::UnsafeCell;
 pub use core::cmp::*;
 pub use core::fmt;
-// Replace deprecated intrinsics with stable ptr API
 pub use core::ptr::write_bytes;
 pub use core::iter::Iterator;
 pub use core::marker::PhantomData;

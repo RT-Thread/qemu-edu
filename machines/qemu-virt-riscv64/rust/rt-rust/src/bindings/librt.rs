@@ -14,14 +14,18 @@
 
 #![allow(non_camel_case_types)]
 
-use core::ffi::{c_char, c_int, c_void, c_uint, c_ulong};
+use core::ffi::{c_char, c_int, c_uint, c_void, c_long, c_ulong, c_uchar};
 
 // RT-Thread basic type definitions
-pub type rt_base_t = c_ulong;
+pub type rt_base_t = c_long;
 pub type rt_ubase_t = c_ulong;
-pub type rt_tick_t = c_uint;
-pub type rt_size_t = c_ulong;
-pub type rt_err_t = c_int;
+pub type rt_err_t = rt_base_t;
+pub type rt_uint32_t = c_uint;
+pub type rt_int32_t = c_int;
+pub type rt_uint8_t  = c_uchar;
+pub type rt_tick_t = rt_uint32_t;
+pub type rt_size_t = rt_ubase_t;
+
 pub type rt_thread_t = *mut c_void;
 pub type rt_sem_t = *mut c_void;
 pub type rt_mutex_t = *mut c_void;
@@ -54,8 +58,8 @@ unsafe extern "C" {
         entry: extern "C" fn(*mut c_void),
         parameter: *mut c_void,
         stack_size: rt_size_t,
-        priority: u8,
-        tick: u32,
+        priority: rt_uint8_t,
+        tick: rt_tick_t,
     ) -> rt_thread_t;
     
     pub fn rt_thread_delete(thread: rt_thread_t) -> rt_err_t;
@@ -63,14 +67,14 @@ unsafe extern "C" {
     pub fn rt_thread_self() -> rt_thread_t;
     pub fn rt_thread_yield() -> rt_err_t;
     pub fn rt_thread_delay(tick: rt_tick_t) -> rt_err_t;
-    pub fn rt_thread_mdelay(ms: c_int) -> rt_err_t;
+    pub fn rt_thread_mdelay(ms: rt_uint32_t) -> rt_err_t;
     pub fn rt_thread_suspend(thread: rt_thread_t) -> rt_err_t;
     pub fn rt_thread_resume(thread: rt_thread_t) -> rt_err_t;
 }
 
 // ============== Semaphore management ==============
 unsafe extern "C" {
-    pub fn rt_sem_create(name: *const c_char, value: u32, flag: u8) -> rt_sem_t;
+    pub fn rt_sem_create(name: *const c_char, value: rt_uint32_t, flag: rt_uint8_t) -> rt_sem_t;
     pub fn rt_sem_delete(sem: rt_sem_t) -> rt_err_t;
     pub fn rt_sem_take(sem: rt_sem_t, time: rt_tick_t) -> rt_err_t;
     pub fn rt_sem_trytake(sem: rt_sem_t) -> rt_err_t;
@@ -79,17 +83,17 @@ unsafe extern "C" {
 
 // ============== Mutex management ==============
 unsafe extern "C" {
-    pub fn rt_mutex_create(name: *const c_char, flag: u8) -> rt_mutex_t;
+    pub fn rt_mutex_create(name: *const c_char, flag: rt_uint8_t) -> rt_mutex_t;
     pub fn rt_mutex_delete(mutex: rt_mutex_t) -> rt_err_t;
     pub fn rt_mutex_take(mutex: rt_mutex_t, time: rt_tick_t) -> rt_err_t;
     pub fn rt_mutex_release(mutex: rt_mutex_t) -> rt_err_t;
 }
 // ============== Message queue management ==============
 unsafe extern "C" {
-    pub fn rt_mq_create(name: *const c_char, msg_size: rt_size_t, max_msgs: rt_size_t, flag: u8) -> rt_mq_t;
+    pub fn rt_mq_create(name: *const c_char, msg_size: rt_size_t, max_msgs: rt_size_t, flag: rt_uint8_t) -> rt_mq_t;
     pub fn rt_mq_send(mq: rt_mq_t, buffer: *const c_void, size: rt_size_t) -> rt_err_t;
-    pub fn rt_mq_send_wait(mq: rt_mq_t, buffer: *const c_void, size: rt_size_t, timeout: c_int) -> rt_err_t;
-    pub fn rt_mq_recv(mq: rt_mq_t, buffer: *mut c_void, size: rt_size_t, timeout: c_int) -> rt_base_t;
+    pub fn rt_mq_send_wait(mq: rt_mq_t, buffer: *const c_void, size: rt_size_t, timeout: rt_int32_t) -> rt_err_t;
+    pub fn rt_mq_recv(mq: rt_mq_t, buffer: *mut c_void, size: rt_size_t, timeout: rt_int32_t) -> rt_base_t;
     pub fn rt_mq_delete(mq: rt_mq_t) -> rt_err_t;
     pub fn rt_mq_detach(mq: rt_mq_t) -> rt_err_t;
 }

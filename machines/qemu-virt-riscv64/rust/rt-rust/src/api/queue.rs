@@ -17,10 +17,10 @@ use alloc::ffi::CString;
 pub type APIRawQueue = rt_mq_t;
 
 #[inline]
-pub(crate) fn queue_create(name: &str, len: u32, message_size: u32) -> Option<APIRawQueue> {
+pub(crate) fn queue_create(name: &str, len: u64, message_size: u64) -> Option<APIRawQueue> {
     let s = CString::new(name).unwrap();
     let raw;
-    unsafe { raw = rt_mq_create(s.as_ptr(), message_size.into(), len.into(), 0) }
+    unsafe { raw = rt_mq_create(s.as_ptr(), message_size, len, 0) }
     if raw == ptr::null_mut() {
         None
     } else {
@@ -32,20 +32,20 @@ pub(crate) fn queue_create(name: &str, len: u32, message_size: u32) -> Option<AP
 pub(crate) fn queue_send_wait(
     handle: APIRawQueue,
     msg: *const c_void,
-    msg_size: u32,
+    msg_size: u64,
     tick: i32,
 ) -> RttCResult {
-    unsafe { rt_mq_send_wait(handle, msg, msg_size.into(), tick).into() }
+    unsafe { rt_mq_send_wait(handle, msg, msg_size, tick).into() }
 }
 
 #[inline]
 pub(crate) fn queue_receive_wait(
     handle: APIRawQueue,
     msg: *mut c_void,
-    msg_size: u32,
+    msg_size: u64,
     tick: i32,
 ) -> RttCResult {
-    unsafe { rt_mq_recv(handle, msg, msg_size.into(), tick).into() }
+    unsafe { rt_mq_recv(handle, msg, msg_size, tick).into() }
 }
 
 #[inline]

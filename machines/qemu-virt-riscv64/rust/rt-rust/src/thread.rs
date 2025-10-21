@@ -2,7 +2,6 @@ use crate::alloc::boxed::Box;
 use crate::api::*;
 use crate::{RTResult, RTTError};
 use alloc::string::String;
-use core::mem;
 use core::ffi::c_void;
 
 #[derive(Debug)]
@@ -57,15 +56,15 @@ impl Thread {
         ticks: u32,
         func: Box<dyn FnOnce()>,
     ) -> Result<Self, RTTError> {
-        let func = Box::new(func);
-        let param = &*func as *const _ as *mut _;
-
         extern "C" fn thread_func(param: *mut c_void) {
             unsafe {
-                let run = Box::from_raw(param as *mut Box<dyn FnOnce()>);
-                run();
+                let outer: Box<Box<dyn FnOnce()>> = Box::from_raw(param as *mut Box<dyn FnOnce()>);
+                let f: Box<dyn FnOnce()> = *outer;
+                f();
             }
         }
+
+        let param = Box::into_raw(Box::new(func)) as *mut c_void;
 
         let th_handle = thread_create(
             name.as_ref(),
@@ -77,15 +76,13 @@ impl Thread {
         )
         .ok_or(RTTError::OutOfMemory)?;
 
-        let ret = match Self::_startup(th_handle) {
-            Ok(_) => {
-                mem::forget(func);
-                Ok(Thread(th_handle))
+        match Self::_startup(th_handle) {
+            Ok(_) => Ok(Thread(th_handle)),
+            Err(e) => {
+                let _ = Box::<Box<dyn FnOnce()>>::from_raw(param as *mut Box<dyn FnOnce()>);
+                Err(e)
             }
-            Err(e) => Err(e),
-        };
-
-        return ret;
+        }
     }
 
     fn _startup(th: APIRawThread) -> Result<(), RTTError> {
