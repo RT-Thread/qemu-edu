@@ -2,3 +2,6 @@ mnt.c
 romfs_data.c
 opensbi
 build
+.config
+link.lds
+rtconfig.py
