@@ -190,15 +190,11 @@ def detect_rust_target(has, rtconfig):
 def clear_feature(cwd):
     global FEATURE_FILE_PATH
     FEATURE_FILE_PATH = os.path.join(cwd, "rt-rust", "Cargo.toml")
-    # Skip git restore; use current Cargo.toml as-is
-
 
 def prepare_set_feature(cur_pkg_dir):
     global FEATURE_FILE_PATH
     path = os.path.join(cur_pkg_dir, "rt-rust")
     FEATURE_FILE_PATH = os.path.join(path, "Cargo.toml")
-    # Skip git restore; SConscript already handles feature selection
-
 
 def select_feature(feature):
     if FEATURE_FILE_PATH == "":

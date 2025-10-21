@@ -9,7 +9,7 @@ PKGS_DIR := packages
 source "$(RTT_DIR)/Kconfig"
 osource "$PKGS_DIR/Kconfig"
 rsource "driver/Kconfig"
-rsource "rust-std/rt-rust/Kconfig"
+rsource "rust/rt-rust/Kconfig"
 
 config BOARD_QEMU_VIRT_RV64
     bool

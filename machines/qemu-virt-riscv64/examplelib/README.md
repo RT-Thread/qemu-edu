@@ -32,13 +32,13 @@ RT-Thread online packages → system packages
     → lwext4: an excellent choice of ext2/3/4 filesystem for microcontrollers.
 ```
 
-## Using the rust-std library
+## Using the rust library
 
 Add `rt_rust` dependency in `Cargo.toml`:
 
 ```toml
 [dependencies]
-rt_rust = { path = "PATH/TO/rust-std/rt-rust" }
+rt_rust = { path = "PATH/TO/rust/rt-rust" }
 ```
 
 Currently the macro-main library is not supported because it causes entry detection issues.

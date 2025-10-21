@@ -28,6 +28,7 @@ if not _has('RT_USING_RUST'):
 src = ['rt-rust/rust_cmd.c']
 LIBS = []
 LIBPATH = []
+LINKFLAGS = ""
 
 
 if GetOption('clean'):
@@ -42,7 +43,7 @@ else:
         prepare_set_feature(cwd)
         if GetDepend("RT_USING_SMP"):
             select_feature("smp")
-        ret = prebuild_rust(cwd, rtconfig, Rtt_Root, Rtt_Root+"/../machines/qemu-virt-riscv64/rust-std/rtt_rust_example_app")
+        ret = prebuild_rust(cwd, rtconfig, Rtt_Root, Rtt_Root+"/../machines/qemu-virt-riscv64/rust/rtt_rust_example_app")
         if ret == "OK":
             LINKFLAGS = " -L%s" % (cwd + "/rust_out/")
             LINKFLAGS += " -Wl,--whole-archive -lrust -Wl,--no-whole-archive"

@@ -33,13 +33,13 @@ RT-Thread online packages → system packages
     → lwext4: an excellent choice of ext2/3/4 filesystem for microcontrollers.
 ```
 
-## rust-std库的使用
+## rust库的使用
  
 在 `Cargo.toml` 中添加 `rt_rust` 依赖
 
 ```toml
 [dependencies]
-rt_rust = { path = "PATH/TO/rust-std/rt-rust" }
+rt_rust = { path = "PATH/TO/rust/rt-rust" }
 ```
 
 目前不支持macro-main库的使用，因为它会导致入口识别错误。
