@@ -29,12 +29,13 @@ mod puts;
 #[global_allocator]
 static GLOBAL: malloc::RttAlloc = malloc::RttAlloc;
 pub mod api;
-mod bindings;
+pub mod bindings;
 
 pub mod init;
 pub mod malloc;
 pub mod mutex;
 pub mod out;
+pub mod fs;
 pub mod param;
 pub mod queue;
 pub mod sem;
@@ -67,6 +68,16 @@ pub enum RTTError {
     DeviceConfigFailed,
     DeviceSetRxCallBackFailed,
     DeviceSetTxCallBackFailed,
+
+    FileOpenErr,
+    FileCloseErr,
+    FileReadErr,
+    FileWriteErr,
+    FileSeekErr,
+    FileFlushErr,
+    FileDeleteErr,
+    FileSetLengthErr,
+    FileSyncErr,
 
     FuncUnDefine,
 }

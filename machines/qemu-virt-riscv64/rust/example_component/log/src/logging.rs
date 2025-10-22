@@ -64,7 +64,6 @@ macro_rules! trace {
 
 pub fn _log(level: Level, args: core::fmt::Arguments) {
     use core::fmt::Write;
-    use rt_rust::out;
     use rt_rust::time;
     let mut s = String::new();
     write!(&mut s, "[{:?}][{:?}]", level, time::get_time()).unwrap();

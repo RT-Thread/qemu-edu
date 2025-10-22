@@ -1,0 +1,35 @@
+[package]
+name = "rust_dummy"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+name = "rust"
+crate-type = [ "staticlib",]
+
+[dependencies.em_component_fs]
+path = "/home/fox/OSPP/test/qemu-edu/rt-thread/../machines/qemu-virt-riscv64/rust/example_usrapp/fs"
+
+[dependencies.rt_rust]
+path = "/home/fox/OSPP/test/qemu-edu/machines/qemu-virt-riscv64/rust/rt-rust"
+
+[dependencies.em_loadlib]
+path = "/home/fox/OSPP/test/qemu-edu/rt-thread/../machines/qemu-virt-riscv64/rust/example_usrapp/loadlib"
+
+[dependencies.em_sem]
+path = "/home/fox/OSPP/test/qemu-edu/rt-thread/../machines/qemu-virt-riscv64/rust/example_usrapp/semaphore"
+
+[dependencies.em_param]
+path = "/home/fox/OSPP/test/qemu-edu/rt-thread/../machines/qemu-virt-riscv64/rust/example_usrapp/param"
+
+[dependencies.em_mutex]
+path = "/home/fox/OSPP/test/qemu-edu/rt-thread/../machines/qemu-virt-riscv64/rust/example_usrapp/mutex"
+
+[dependencies.em_queue]
+path = "/home/fox/OSPP/test/qemu-edu/rt-thread/../machines/qemu-virt-riscv64/rust/example_usrapp/queue"
+
+[dependencies.em_thread]
+path = "/home/fox/OSPP/test/qemu-edu/rt-thread/../machines/qemu-virt-riscv64/rust/example_usrapp/thread"
+
+[dependencies.em_component_log]
+path = "/home/fox/OSPP/test/qemu-edu/rt-thread/../machines/qemu-virt-riscv64/rust/example_component/log"

@@ -26,7 +26,7 @@ static int rust_component_init(void)
     int ret = rust_init();
     if (ret == 0)
     {
-        printf("Hello Rust!\n");
+        printf("Hello RT-Thread Rust!\n");
     }
     return ret;
 }

@@ -6,3 +6,5 @@ build
 /*.lds
 /*.sh
 /rtconfig*
+text.txt
+fat

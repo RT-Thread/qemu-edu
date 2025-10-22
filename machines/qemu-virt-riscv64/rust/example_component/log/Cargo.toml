@@ -1,5 +1,5 @@
 [package]
-name = "em_component"
+name = "em_component_log"
 version = "0.1.0"
 edition = "2021"
 
