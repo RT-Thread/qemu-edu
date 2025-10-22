@@ -35,7 +35,6 @@ pub mod init;
 pub mod malloc;
 pub mod mutex;
 pub mod out;
-pub mod logging;
 pub mod param;
 pub mod queue;
 pub mod sem;

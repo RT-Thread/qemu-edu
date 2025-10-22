@@ -24,13 +24,13 @@ struct Args {
     #[darling(default)]
     name: Option<String>,
     #[darling(default)]
-    run: Option<bool>,
+    component: Option<bool>,
+    #[darling(default)]
+    app: Option<bool>,
     #[darling(default)]
     cmd: Option<bool>,
     #[darling(default)]
     desc: Option<String>,
-    #[darling(default)]
-    component: Option<bool>,
 }
 
 #[proc_macro_attribute]
@@ -63,17 +63,16 @@ pub fn rtt_main(args: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     let main_func_name = format_ident!("__{}_main_func", arg.name.as_ref().unwrap());
-
-    let run_seg_name = format_ident!("__{}_run_seg", arg.name.as_ref().unwrap());
-    let run_func_name = format_ident!("__{}_run_func", arg.name.as_ref().unwrap());
-    let run_struct_name = format_ident!("__{}_run_seg_struct", arg.name.as_ref().unwrap());
+    let component_seg_name = format_ident!("__{}_component_seg", arg.name.as_ref().unwrap());
+    let component_func_name = format_ident!("__{}_component_func", arg.name.as_ref().unwrap());
+    let component_struct_name = format_ident!("__{}_component_seg_struct", arg.name.as_ref().unwrap());
+    let app_seg_name = format_ident!("__{}_app_seg", arg.name.as_ref().unwrap());
+    let app_func_name = format_ident!("__{}_app_func", arg.name.as_ref().unwrap());
+    let app_struct_name = format_ident!("__{}_app_seg_struct", arg.name.as_ref().unwrap());
     let cmd_seg_name = format_ident!("__{}_cmd_seg", arg.name.as_ref().unwrap());
     let cmd_struct_name = format_ident!("__{}_cmd_seg_struct", arg.name.as_ref().unwrap());
     let cmd_namestr_name = format_ident!("__{}_cmd_namestr", arg.name.as_ref().unwrap());
     let cmd_descstr_name = format_ident!("__{}_cmd_descstr", arg.name.as_ref().unwrap());
-    let component_seg_name = format_ident!("__{}_component_seg", arg.name.as_ref().unwrap());
-    let component_func_name = format_ident!("__{}_component_func", arg.name.as_ref().unwrap());
-
     let mod_name = format_ident!("__init_func_{}_", arg.name.as_ref().unwrap());
     let call_func_name = f.sig.ident.clone();
 
@@ -132,40 +131,46 @@ pub fn rtt_main(args: TokenStream, input: TokenStream) -> TokenStream {
         }
     );
 
-    let run_seg = if arg.run.is_none() {
-        quote!()
-    } else {
-        // Place the init function pointer directly in .rti_fn.6 as expected by RT-Thread
-        quote!(
-            #[no_mangle]
-            pub extern "C" fn #run_func_name() -> i32 {
-                unsafe { #main_func_name(0, core::ptr::null()) };
-                0
-            }
-
-            // RT-Thread expects an init_fn_t (int (*)(void)) element in .rti_fn.6
-            #[link_section = ".rti_fn.6"]
-            #[no_mangle]
-            static #run_seg_name: extern "C" fn() -> i32 = #run_func_name;
-        )
-    };
-
     let component_seg = if arg.component.is_none() {
         quote!()
     } else {
-        // Register as a component init at level 4 (.rti_fn.4)
         quote!(
+            struct #component_struct_name (*const ());
+            unsafe impl Sync for #component_struct_name{}
+
             #[no_mangle]
-            pub extern "C" fn #component_func_name() -> i32 {
-                unsafe { #main_func_name(0, core::ptr::null()) };
+            pub unsafe extern "C" fn #component_func_name() -> i32 {
+                #main_func_name(0, 0 as _);
                 0
             }
 
             #[link_section = ".rti_fn.4"]
             #[no_mangle]
-            static #component_seg_name: extern "C" fn() -> i32 = #component_func_name;
+            static #component_seg_name: #component_struct_name
+                = #component_struct_name (#component_func_name as *const ());
+        )
+    };    
+
+    let app_seg = if arg.app.is_none() {
+        quote!()
+    } else {
+        quote!(
+            struct #app_struct_name (*const ());
+            unsafe impl Sync for #app_struct_name{}
+
+            #[no_mangle]
+            pub unsafe extern "C" fn #app_func_name() -> i32 {
+                #main_func_name(0, 0 as _);
+                0
+            }
+
+            #[link_section = ".rti_fn.6"]
+            #[no_mangle]
+            static #app_seg_name: #app_struct_name
+                = #app_struct_name (#app_func_name as *const ());
         )
     };
+
 
     let cmd_seg = if arg.cmd.is_none() {
         quote!()
@@ -190,9 +195,6 @@ pub fn rtt_main(args: TokenStream, input: TokenStream) -> TokenStream {
             #[no_mangle]
             static #cmd_descstr_name: [u8; #desc_len] = *#r_desc;
 
-            // Finsh syscall layout when FINSH_USING_DESCRIPTION and FINSH_USING_OPTION_COMPLETION enabled:
-            // struct finsh_syscall { const char *name; const char *desc; const struct msh_cmd_opt *opt; syscall_func func; };
-            // We don't provide options from Rust, set opt to null.
             #[repr(C)]
             struct #cmd_struct_name {
                 name: *const u8,
@@ -203,7 +205,6 @@ pub fn rtt_main(args: TokenStream, input: TokenStream) -> TokenStream {
             unsafe impl Sync for #cmd_struct_name{}
 
             extern "C" fn __wrap_main(argc: u32, argv: *const *const u8) -> i32 {
-                // Call the generated main and return 0 consistently
                 unsafe { #main_func_name(argc, argv); }
                 0
             }
@@ -229,8 +230,8 @@ pub fn rtt_main(args: TokenStream, input: TokenStream) -> TokenStream {
             use core::iter::IntoIterator;
 
             #core
-            #run_seg
             #component_seg
+            #app_seg
             #cmd_seg
         }
     )

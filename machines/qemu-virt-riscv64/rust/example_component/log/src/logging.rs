@@ -1,5 +1,14 @@
+/*
+ * Copyright (c) 2006-2024, RT-Thread Development Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       notes
+ * 2025-10-10     foxglove     micro rust log component
+ */
 use alloc::string::String;
-use crate::println;
+use rt_rust::println;
 
 #[repr(usize)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -55,8 +64,8 @@ macro_rules! trace {
 
 pub fn _log(level: Level, args: core::fmt::Arguments) {
     use core::fmt::Write;
-    use crate::out;
-    use crate::time;
+    use rt_rust::out;
+    use rt_rust::time;
     let mut s = String::new();
     write!(&mut s, "[{:?}][{:?}]", level, time::get_time()).unwrap();
     write!(&mut s, "{}", args).unwrap();
