@@ -8,7 +8,7 @@ use rt_rust::get_libfn;
 use core::ffi::{c_int, c_char};
 use rt_rust::param::Param;
 
-#[rtt_main(appname = "rust_dl_demo", cmd = true, desc = "Rust example app.")]
+#[rtt_main(name = "rust_dl_demo", cmd = true, desc = "Rust example app.")]
 fn main(_param: Param) {
     println!("\n=== Macro Demo ===");
 

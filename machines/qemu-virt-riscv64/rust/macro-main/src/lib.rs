@@ -22,13 +22,15 @@ use syn::NestedMeta as DarlingNestedMeta;
 #[derive(Debug, FromMeta)]
 struct Args {
     #[darling(default)]
-    appname: Option<String>,
+    name: Option<String>,
     #[darling(default)]
     run: Option<bool>,
     #[darling(default)]
     cmd: Option<bool>,
     #[darling(default)]
     desc: Option<String>,
+    #[darling(default)]
+    component: Option<bool>,
 }
 
 #[proc_macro_attribute]
@@ -51,26 +53,28 @@ pub fn rtt_main(args: TokenStream, input: TokenStream) -> TokenStream {
         }
     };
 
-    if arg.appname.is_none() {
+    if arg.name.is_none() {
         return parse::Error::new(
             Span::call_site(),
-            "`#[marco_main_use]` macro must have attribute `appname`",
+            "`#[marco_main_use]` macro must have attribute `name`",
         )
             .to_compile_error()
             .into();
     }
 
-    let main_func_name = format_ident!("__{}_main_func", arg.appname.as_ref().unwrap());
+    let main_func_name = format_ident!("__{}_main_func", arg.name.as_ref().unwrap());
 
-    let run_seg_name = format_ident!("__{}_run_seg", arg.appname.as_ref().unwrap());
-    let run_func_name = format_ident!("__{}_run_func", arg.appname.as_ref().unwrap());
-    let run_struct_name = format_ident!("__{}_run_seg_struct", arg.appname.as_ref().unwrap());
-    let cmd_seg_name = format_ident!("__{}_cmd_seg", arg.appname.as_ref().unwrap());
-    let cmd_struct_name = format_ident!("__{}_cmd_seg_struct", arg.appname.as_ref().unwrap());
-    let cmd_namestr_name = format_ident!("__{}_cmd_namestr", arg.appname.as_ref().unwrap());
-    let cmd_descstr_name = format_ident!("__{}_cmd_descstr", arg.appname.as_ref().unwrap());
+    let run_seg_name = format_ident!("__{}_run_seg", arg.name.as_ref().unwrap());
+    let run_func_name = format_ident!("__{}_run_func", arg.name.as_ref().unwrap());
+    let run_struct_name = format_ident!("__{}_run_seg_struct", arg.name.as_ref().unwrap());
+    let cmd_seg_name = format_ident!("__{}_cmd_seg", arg.name.as_ref().unwrap());
+    let cmd_struct_name = format_ident!("__{}_cmd_seg_struct", arg.name.as_ref().unwrap());
+    let cmd_namestr_name = format_ident!("__{}_cmd_namestr", arg.name.as_ref().unwrap());
+    let cmd_descstr_name = format_ident!("__{}_cmd_descstr", arg.name.as_ref().unwrap());
+    let component_seg_name = format_ident!("__{}_component_seg", arg.name.as_ref().unwrap());
+    let component_func_name = format_ident!("__{}_component_func", arg.name.as_ref().unwrap());
 
-    let mod_name = format_ident!("__app_init_{}_", arg.appname.as_ref().unwrap());
+    let mod_name = format_ident!("__init_func_{}_", arg.name.as_ref().unwrap());
     let call_func_name = f.sig.ident.clone();
 
     // check the function signature
@@ -146,6 +150,23 @@ pub fn rtt_main(args: TokenStream, input: TokenStream) -> TokenStream {
         )
     };
 
+    let component_seg = if arg.component.is_none() {
+        quote!()
+    } else {
+        // Register as a component init at level 4 (.rti_fn.4)
+        quote!(
+            #[no_mangle]
+            pub extern "C" fn #component_func_name() -> i32 {
+                unsafe { #main_func_name(0, core::ptr::null()) };
+                0
+            }
+
+            #[link_section = ".rti_fn.4"]
+            #[no_mangle]
+            static #component_seg_name: extern "C" fn() -> i32 = #component_func_name;
+        )
+    };
+
     let cmd_seg = if arg.cmd.is_none() {
         quote!()
     } else {
@@ -155,7 +176,7 @@ pub fn rtt_main(args: TokenStream, input: TokenStream) -> TokenStream {
         });
         let r_desc = Literal::byte_string(desc.as_bytes());
 
-        let mut cmd_name = arg.appname.as_ref().unwrap().clone();
+        let mut cmd_name = arg.name.as_ref().unwrap().clone();
         cmd_name.push_str("\0");
         let r_cmd_name = Literal::byte_string(cmd_name.as_bytes());
 
@@ -209,6 +230,7 @@ pub fn rtt_main(args: TokenStream, input: TokenStream) -> TokenStream {
 
             #core
             #run_seg
+            #component_seg
             #cmd_seg
         }
     )

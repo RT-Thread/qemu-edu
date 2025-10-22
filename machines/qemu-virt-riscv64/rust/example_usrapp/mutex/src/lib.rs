@@ -11,7 +11,7 @@ use rt_rust::println;
 use rt_rust::thread;
 use rt_rust::time;
 
-#[rtt_main(appname = "rust_mutex_demo", cmd = true, desc = "Rust example app.")]
+#[rtt_main(name = "rust_mutex_demo", cmd = true, desc = "Rust example app.")]
 fn main(_param: Param) {
     let counter = Arc::new(Mutex::new(0).unwrap());
     let run = move || loop {

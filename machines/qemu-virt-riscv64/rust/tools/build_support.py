@@ -289,7 +289,11 @@ def get_rust_sysroot():
 def make_remap_flags(rustc_path, cur_pkg_dir, app_dir):
     remap_core = f" --remap-path-prefix={os.path.join(rustc_path, RUSTC_CORE_PATH)}=core"
     remap_alloc = f" --remap-path-prefix={os.path.join(rustc_path, RUSTC_ALLOC_PATH)}=alloc"
-    remap_apps = f" --remap-path-prefix={os.path.abspath(app_dir)}=apps"
+    # support single dir or list of app dirs
+    if isinstance(app_dir, (list, tuple)):
+        remap_apps = "".join([f" --remap-path-prefix={os.path.abspath(d)}=apps" for d in app_dir])
+    else:
+        remap_apps = f" --remap-path-prefix={os.path.abspath(app_dir)}=apps"
     remap_main = f" --remap-path-prefix={os.path.abspath(cur_pkg_dir)}="
     return remap_core + remap_alloc + remap_apps + remap_main
 
@@ -335,7 +339,14 @@ def copy_artifact(cur_pkg_dir, target, debug_build):
 # Refactored PrebuildRust using helpers
 
 def prebuild_rust(cur_pkg_dir, rtconfig, rtt_path, app_dir):
-    rust_app_proj, rust_app_proj_name = discover_rust_apps(app_dir)
+    # allow multi directories
+    app_dirs = app_dir if isinstance(app_dir, (list, tuple)) else [app_dir]
+    rust_app_proj = []
+    rust_app_proj_name = []
+    for d in app_dirs:
+        paths, names = discover_rust_apps(d)
+        rust_app_proj += paths
+        rust_app_proj_name += names
     if len(rust_app_proj) == 0:
         return "PASS"
 
@@ -351,7 +362,7 @@ def prebuild_rust(cur_pkg_dir, rtconfig, rtt_path, app_dir):
         return "ERR"
 
     base_flags = make_rustflags(rtconfig, target)
-    all_rust_flag = base_flags + make_remap_flags(rustc_path, cur_pkg_dir, app_dir)
+    all_rust_flag = base_flags + make_remap_flags(rustc_path, cur_pkg_dir, app_dirs)
 
     debug_build = is_debug_build()
 

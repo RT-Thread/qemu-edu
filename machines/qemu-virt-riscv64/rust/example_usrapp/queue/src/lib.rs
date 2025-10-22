@@ -12,7 +12,7 @@ use rt_rust::println;
 use rt_rust::thread;
 use rt_rust::time;
 
-#[rtt_main(appname = "rust_queue_demo", cmd = true, desc = "Rust example app.")]
+#[rtt_main(name = "rust_queue_demo", cmd = true, desc = "Rust example app.")]
 fn main(_param: Param) {
     let send = Arc::new(Queue::new(2).unwrap());
     let recv = send.clone();

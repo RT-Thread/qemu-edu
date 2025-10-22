@@ -8,7 +8,7 @@ use rt_rust::thread;
 use rt_rust::time;
 
 #[rtt_main(
-    appname = "rust_thread_demo",
+    name = "rust_thread_demo",
     cmd = true,
     desc = "Rust example app."
 )]
