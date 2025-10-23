@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       notes
- * 2025-10-10     foxglove     micro rust log component
+ * 2025-10-20     foxglove     micro rust log component
  */
 use alloc::string::String;
 use rt_rust::println;

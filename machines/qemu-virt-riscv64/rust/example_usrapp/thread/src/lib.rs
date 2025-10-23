@@ -10,13 +10,13 @@
 #![no_std]
 
 use core::time::Duration;
-use macro_main::rtt_main;
+use macro_main::marco_main_use;
 use rt_rust::param::Param;
 use rt_rust::println;
 use rt_rust::thread;
 use rt_rust::time;
 
-#[rtt_main(
+#[marco_main_use(
     name = "rust_thread_demo",
     cmd = true,
     desc = "Rust example app."

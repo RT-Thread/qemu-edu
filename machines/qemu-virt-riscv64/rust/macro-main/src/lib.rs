@@ -34,7 +34,7 @@ struct Args {
 }
 
 #[proc_macro_attribute]
-pub fn rtt_main(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn marco_main_use(args: TokenStream, input: TokenStream) -> TokenStream {
     let f = parse_macro_input!(input as syn::ItemFn);
     let parser = syn::punctuated::Punctuated::<Meta, syn::token::Comma>::parse_terminated;
     let raw_meta = match parser.parse(args) {

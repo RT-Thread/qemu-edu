@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 macro_main = { path = "../../macro-main/" }
 rt_rust = { path = "../../rt-rust/" }
+em_component_log = { path = "../../example_component/log"}

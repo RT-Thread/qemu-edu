@@ -14,14 +14,14 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::sync::Arc;
 use core::time::Duration;
-use macro_main::rtt_main;
+use macro_main::marco_main_use;
 use rt_rust::queue::Queue;
 use rt_rust::param::Param;
 use rt_rust::println;
 use rt_rust::thread;
 use rt_rust::time;
 
-#[rtt_main(name = "rust_queue_demo", cmd = true, desc = "Rust example app.")]
+#[marco_main_use(name = "rust_queue_demo", cmd = true, desc = "Rust example app.")]
 fn main(_param: Param) {
     let send = Arc::new(Queue::new(2).unwrap());
     let recv = send.clone();

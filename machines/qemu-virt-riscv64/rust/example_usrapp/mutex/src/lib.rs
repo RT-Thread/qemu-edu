@@ -13,14 +13,14 @@ extern crate alloc;
 
 use alloc::sync::Arc;
 use core::time::Duration;
-use macro_main::rtt_main;
+use macro_main::marco_main_use;
 use rt_rust::mutex::Mutex;
 use rt_rust::param::Param;
 use rt_rust::println;
 use rt_rust::thread;
 use rt_rust::time;
 
-#[rtt_main(name = "rust_mutex_demo", cmd = true, desc = "Rust example app.")]
+#[marco_main_use(name = "rust_mutex_demo", cmd = true, desc = "Rust example app.")]
 fn main(_param: Param) {
     let counter = Arc::new(Mutex::new(0).unwrap());
     let run = move || loop {

@@ -6,17 +6,18 @@
  *
  * Change Logs:
  * Date           Author       notes
- * 2025-10-10     foxglove     Rust file opration test.
+ * 2025-10-20     foxglove     Rust file opration test.
  */
 #![no_std]
 
 extern crate alloc;
 
-use macro_main::rtt_main;
+use macro_main::marco_main_use;
+use em_component_log::{info, error};
 use rt_rust::{fs, println};
 use rt_rust::param::Param;
 
-#[rtt_main(name = "rust_file_demo", cmd = true, desc = "Rust example app.")]
+#[marco_main_use(name = "rust_file_demo", cmd = true, desc = "Rust example app.")]
 fn main(_param: Param) {
     println!("[rust_file_test] start");
 
@@ -29,43 +30,43 @@ fn main(_param: Param) {
         .open("test.txt")
     {
         Ok(f) => {
-            println!("open test.txt ok");
+            info!("open test.txt ok");
             f
         }
         Err(e) => {
-            println!("open error: {:?}", e);
+            error!("open error: {:?}", e);
             return;
         }
     };
 
     if let Err(e) = file.write_all("Hello from FS wrapper!\n") {
-        println!("write_all error: {:?}", e);
+        error!("write_all error: {:?}", e);
         return;
     }
-    println!("write_all done");
+    info!("write_all done");
 
     if let Err(e) = file.flush() {
-        println!("flush error: {:?}", e);
+        error!("flush error: {:?}", e);
     } else {
-        println!("flush ok");
+        info!("flush ok");
     }
 
     match file.read_to_string() {
-        Ok(s) => println!("read_back: {}", s),
-        Err(e) => println!("read_to_string error: {:?}", e),
+        Ok(s) => info!("read_back: {}", s),
+        Err(e) => error!("read_to_string error: {:?}", e),
     }
 
     if let Err(e) = file.set_len(5) {
-        println!("truncate error: {:?}", e);
+        error!("truncate error: {:?}", e);
     } else {
-        println!("truncate to 5 ok");
+        info!("truncate to 5 ok");
     }
 
     if let Err(e) = file.close() {
-        println!("close error: {:?}", e);
+        error!("close error: {:?}", e);
     } else {
-        println!("close ok");
+        info!("close ok");
     }
 
-    println!("[rust_file_test] end");
+    info!("[rust_file_test] end");
 }

@@ -11,13 +11,13 @@
 
 extern crate alloc;
 
-use macro_main::rtt_main;
+use macro_main::marco_main_use;
 use rt_rust::println;
 use rt_rust::get_libfn;
 use core::ffi::{c_int, c_char};
 use rt_rust::param::Param;
 
-#[rtt_main(name = "rust_dl_demo", cmd = true, desc = "Rust example app.")]
+#[marco_main_use(name = "rust_dl_demo", cmd = true, desc = "Rust example app.")]
 fn main(_param: Param) {
     println!("\n=== Macro Demo ===");
 

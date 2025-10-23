@@ -12,11 +12,11 @@
 extern crate alloc;
 
 use alloc::string::String;
-use macro_main::rtt_main;
+use macro_main::marco_main_use;
 use rt_rust::param::Param;
 use rt_rust::println;
 
-#[rtt_main(name = "rust_param_demo",
+#[marco_main_use(name = "rust_param_demo",
             cmd = true,
             app = true,
             desc = "Rust example app.")]
