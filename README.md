@@ -9,9 +9,11 @@
 
 ```
 .
-├── machines      # 支持的板卡移植
-├── tutorials     # 教程文档
-└── ...
+├── machines          # 支持的板卡移植
+├── tutorials         # 教程文档
+├── course-projects   # 课程设计题目
+├── docs              # 技术文档和设计方案
+└── rt-thread         # RT-Thread内核(submodule)
 ```
 
 ## 板卡支持计划
@@ -50,9 +52,9 @@ $ ./qemu-nographic.sh   # 执行
 
 ## 教学资源
 
-- 教程文档
-- 课题方向
-- 比赛题目
+- [教程文档](tutorials/)
+- [课题方向](course-projects/)
+- [技术文档](docs/) - 包括Rust组件集成设计方案
 
 ## 贡献指南
 
