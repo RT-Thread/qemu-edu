@@ -46,7 +46,7 @@ rt-thread/components/rust/
 │   │   └── lang_items.rs       # 语言项实现
 │   └── linker/                 # 链接脚本
 │       └── rust_module.ld
-├── msh/                         # Shell命令支持
+├── shell/                       # Shell命令支持
 │   ├── Cargo.toml
 │   ├── src/
 │   │   ├── lib.rs
@@ -159,7 +159,7 @@ rt-thread/components/rust/
   }
   ```
 
-### 2.3 Shell命令支持 (msh/)
+### 2.3 Shell命令支持 (shell/)
 
 **目标**: 简化Rust程序导出shell命令的过程。
 
@@ -498,9 +498,9 @@ Rust可以实现设备驱动：
 ## 八、参考资料
 
 1. RT-Thread组件开发指南
-2. Rust嵌入式开发手册
-3. Linux内核Rust支持项目
-4. Zephyr RTOS的Rust集成
+2. [Rust嵌入式开发手册](https://github.com/rust-embedded/book)
+3. [Linux内核Rust支持项目](https://github.com/Rust-for-Linux/linux)
+4. [Zephyr RTOS](https://github.com/zephyrproject-rtos/zephyr)
 
 ## 九、总结
 

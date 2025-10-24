@@ -41,7 +41,7 @@ rt-thread/components/rust/
 │   │   └── lang_items.rs       # 语言项
 │   └── linker/
 │       └── rust_module.ld      # 链接脚本
-├── msh/                         # Shell命令支持
+├── shell/                       # Shell命令支持
 │   ├── Cargo.toml
 │   └── src/
 │       └── commands.rs
@@ -100,7 +100,7 @@ rt-thread/components/rust/
 - **lang_items.rs** - 必要的语言项实现
 - **linker/** - 链接脚本，用于模块加载
 
-### 2.3 Shell命令支持 (msh/)
+### 2.3 Shell命令支持 (shell/)
 
 **导出Rust命令到RT-Thread shell：**
 
@@ -286,7 +286,7 @@ module_info! {
 ### 5.3 文件/目录结构反映组件特点
 - **core/** - 核心功能层
 - **runtime/** - 运行时层
-- **msh/** - shell集成层
+- **shell/** - shell集成层
 - **examples/** - 按应用场景分类的示例
   - applications/ - 应用层
   - components/ - 组件层
@@ -352,8 +352,8 @@ rt-thread/components/libc/posix/libdl/
 可以参考PR #12中的部分实现，以及以下开源项目：
 
 1. [Linux内核Rust支持](https://github.com/Rust-for-Linux/linux)
-2. [Zephyr RTOS的Rust集成](https://github.com/zephyrproject-rtos/zephyr/tree/main/samples/rust)
-3. [嵌入式Rust示例](https://github.com/rust-embedded/rust-embedded)
+2. [Zephyr RTOS](https://github.com/zephyrproject-rtos/zephyr)
+3. [Rust嵌入式开发手册](https://github.com/rust-embedded/book)
 
 ## 总结
 
