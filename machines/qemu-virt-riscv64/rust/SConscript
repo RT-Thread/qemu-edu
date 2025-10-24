@@ -1,4 +1,3 @@
-Import('rtconfig')
 import os
 import sys
 from building import *
@@ -7,11 +6,16 @@ cwd = GetCurrentDir()
 
 # Import helper utilities
 sys.path.append(os.path.join(cwd, 'tools'))
-from build_support import prebuild_rust
-from build_support import clear_feature
-from build_support import select_feature
-from build_support import prepare_set_feature
-from build_support import verify_rust_toolchain
+from build_support import (
+    detect_rust_target,
+    make_rustflags,
+    collect_features,
+    verify_rust_toolchain,
+    ensure_rust_target_installed,
+    cargo_build_staticlib,
+    clean_rust_build,
+)
+
 
 def _has(sym: str) -> bool:
     try:
@@ -19,51 +23,57 @@ def _has(sym: str) -> bool:
     except Exception:
         return bool(GetDepend(sym))
 
+
 # Not enabled? Return empty group early
 if not _has('RT_USING_RUST'):
     group = []
     Return('group')
 
+
 # Source files – MSH command glue
-src = ['rt-rust/rust_cmd.c']
+src = ['rust_cmd.c']
 LIBS = []
 LIBPATH = []
-LINKFLAGS = ""
-
 
 if GetOption('clean'):
-    # clean_rust_build(Dir('#').abspath)
-    clear_feature(cwd)
-    os.system("cd %s; rm -rf rust_out" % cwd)
-    os.system("cd %s; rm -rf rust_dummy" % cwd)
-    os.system("cd %s; rm -rf build" % cwd)
-    group = DefineGroup('rust', src, depend=[])
-else:  
+    # Clean Rust artifacts if toolchain present
     if verify_rust_toolchain():
-        prepare_set_feature(cwd)
-        if GetDepend("RT_USING_SMP"):
-            select_feature("smp")
-        ret = prebuild_rust(
-            cwd,
-            rtconfig,
-            Rtt_Root,
-            [
-                Rtt_Root+"/../machines/qemu-virt-riscv64/rust/example_usrapp",
-                Rtt_Root+"/../machines/qemu-virt-riscv64/rust/example_component",
-            ],
-        )
-        if ret == "OK":
-            LINKFLAGS = " -L%s" % (cwd + "/rust_out/")
-            LINKFLAGS += " -Wl,--whole-archive -lrust -Wl,--no-whole-archive"
-            LINKFLAGS += " -Wl,--allow-multiple-definition"
-        elif ret == "PASS":
-            pass
-        elif ret == "ERR":
-            raise Exception("RUST BUILD FATAL ERROR!!!")
+        clean_rust_build(Dir('#').abspath)
+    else:
+        print('Warning: Rust toolchain not found, skipping Rust clean')
+else:
+    if verify_rust_toolchain():
+        import rtconfig
+
+        target = detect_rust_target(_has, rtconfig)
+        if not target:
+            print('Error: Unable to detect Rust target; please check configuration')
+        else:
+            print(f'Detected Rust target: {target}')
+
+            # Optional hint if target missing
+            ensure_rust_target_installed(target)
+
+            # Build mode and features
+            debug = bool(_has('RUST_DEBUG_BUILD'))
+            features = collect_features(_has)
+
+            rustflags = make_rustflags(rtconfig, target)
+            rust_lib = cargo_build_staticlib(
+                rust_dir=cwd, target=target, features=features, debug=debug, rustflags=rustflags
+            )
+
+            if rust_lib:
+                LIBS = ['rt_rust']
+                LIBPATH = [os.path.dirname(rust_lib)]
+                print('Rust library linked successfully')
+            else:
+                print('Warning: Failed to build Rust library')
     else:
         print('Warning: Rust toolchain not found')
         print('Please install Rust from https://rustup.rs')
-    
-    group = DefineGroup('rust', src, depend=['RT_USING_RUST'], LINKFLAGS=LINKFLAGS, LIBS=LIBS, LIBPATH=LIBPATH)
+
+# Define component group for SCons
+group = DefineGroup('rust', src, depend=['RT_USING_RUST'], LIBS=LIBS, LIBPATH=LIBPATH)
 
 Return('group')

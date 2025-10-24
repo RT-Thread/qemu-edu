@@ -1,0 +1,18 @@
+[workspace]
+members = [".", "macro-main"]
+
+[package]
+name = "rt-rust"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "rt_rust"
+crate-type = ["rlib", "staticlib"]
+
+[dependencies]
+macro_main = { path = "macro-main" }
+
+[features]
+default = []
+smp = []

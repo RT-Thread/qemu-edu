@@ -20,7 +20,10 @@
 1. 在 Rust 代码中引入 `macro_main` 过程宏。
 2. 在 `main` 函数上添加 `#[macro_main_use]` 注解。
 3. 根据需求注册为组件或应用。
+   * 组件：`component = true`，会自动注册为组件初始化入口。
+   * 应用：`app = true`，会自动注册为应用初始化入口。
 4. 编译 Rust 代码，生成的可执行文件中就会包含 `main` 函数的入口。
+5. 当C代码需要调用Rust函数时，需要在C代码中声明Rust函数的原型，并且使用 `extern "C"` 来指定调用约定。例如：`extern "C" void rust_function_name(void);`
 
 ## 参考实现
 

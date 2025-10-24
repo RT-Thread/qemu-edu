@@ -34,6 +34,7 @@ rt-rust/
     ├── out.rs           # 输出函数
     ├── param.rs         # 参数传递
     ├── puts.rs          # 输出字符串
+    ├── fs.rs            # 文件操作
     ├── queue.rs         # 队列操作
     ├── sem.rs           # 信号量
     ├── thread.rs        # 线程
@@ -101,6 +102,7 @@ scons -c
 | `rust_queue_demo` | 队列演示|
 | `rust_sem_demo` | 信号量演示|
 | `rust_dl_demo` | 动态模块加载演示|
+| `rust_fs_demo` | 文件与日志操作演示(需启用日志组件)|
 
 ## 配置选项
 
@@ -108,6 +110,8 @@ scons -c
 
 - `RT_USING_RUST` - 启用/禁用 Rust 组件
 - `RUST_INIT_COMPONENT` - 启动时自动初始化
+- `RUST_USING_LOG` - 启用/禁用日志组件
+- `RUST_DEBUG_BUILD` - 启用/禁用文件系统组件
 
 ## 技术细节
 

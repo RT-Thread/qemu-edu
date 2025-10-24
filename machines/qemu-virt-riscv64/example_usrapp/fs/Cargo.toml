@@ -1,0 +1,17 @@
+[package]
+name = "em_fs"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "em_fs"
+crate-type = ["staticlib"]
+
+[features]
+default = []
+enable-log = ["em_component_log/enable-log"]
+
+[dependencies]
+rt-rust = { path = "../../rust/" }
+macro_main = { path = "../../rust/macro-main/" }
+em_component_log = { path = "../../example_component/log"}

@@ -33,6 +33,7 @@ rt-rust/
     ├── out.rs           # Output functions
     ├── param.rs         # Parameter passing
     ├── puts.rs          # String output
+    ├── fs.rs            # File system operations
     ├── queue.rs         # Queue operations
     ├── sem.rs           # Semaphore
     ├── thread.rs        # Thread
@@ -101,6 +102,7 @@ The build system automatically detects the correct target from RT-Thread configu
 | `rust_queue_demo` | Queue demo |
 | `rust_sem_demo` | Semaphore demo |
 | `rust_dl_demo` | Dynamic module loading demo |
+| `rust_fs_demo` | File system operations demo (requires logging component enabled) |
 
 ## Configuration Options
 
@@ -108,6 +110,8 @@ Configure via `menuconfig`:
 
 - `RT_USING_RUST` - Enable/disable Rust component
 - `RUST_INIT_COMPONENT` - Auto-initialize at startup
+- `RUST_USING_LOG` - Enable/disable logging component
+- `RUST_DEBUG_BUILD` - Enable/disable file system component
 
 ## Technical Details
 

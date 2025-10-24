@@ -1,8 +1,0 @@
-[package]
-name = "em_queue"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-macro_main = {path = "../../macro-main/"}
-rt_rust = {path = "../../rt-rust/"}

@@ -1,37 +1,6 @@
-import toml
 import os
 import subprocess
-from building import *
 
-TEMPLATE = {
-    "package": {"name": "rust_dummy", "version": "0.0.0", "edition": "2021"},
-    "lib": {"name": "rust", "crate-type": ["staticlib"]},
-    "dependencies": {},
-}
-
-CARGO_CMD = {
-    "f1": "cargo rustc",
-    "f2": "-Z build-std=core,alloc",
-    "f6": "-Z build-std-features=compiler-builtins-mem",
-    "f3": "--target",
-    "target-arch": "%s",
-    "f4": "--release",
-    "out-path": "--target-dir=%s",
-    "f5": "--",
-    "f6": "-Z build-std-features=compiler-builtins-mem",
-}
-
-
-RUSTC_CORE_PATH = "lib/rustlib/src/rust/library/core"
-RUSTC_ALLOC_PATH = "lib/rustlib/src/rust/library/alloc"
-
-FEATURE_FILE_PATH = ""
-
-def _has(sym: str) -> bool:
-    try:
-        return bool(GetDepend([sym]))
-    except Exception:
-        return bool(GetDepend(sym))
 
 def _parse_cflags(cflags: str):
     info = {
@@ -67,47 +36,6 @@ def _parse_cflags(cflags: str):
 
     return info
 
-def verify_rust_toolchain():
-    try:
-        r1 = subprocess.run(["rustc", "--version"], capture_output=True, text=True)
-        r2 = subprocess.run(["cargo", "--version"], capture_output=True, text=True)
-        return r1.returncode == 0 and r2.returncode == 0
-    except Exception:
-        return False
-
-def ensure_rust_target_installed(target: str):
-    try:
-        result = subprocess.run(["rustup", "target", "list", "--installed"], capture_output=True, text=True)
-        if result.returncode == 0 and target in result.stdout:
-            return True
-        print(f"Rust target '{target}' is not installed.")
-        print(f"Please install it with: rustup target add {target}")
-    except Exception:
-        print("Warning: Failed to check rustup target list (rustup missing?)")
-    return False
-
-def make_rustflags(rtconfig, target: str):
-    rustflags = [
-        "-C", "opt-level=z",
-        "-C", "panic=abort",
-        "-C", "relocation-model=static",
-    ]
-
-    if "riscv" in target:
-        rustflags += [
-            "-C", "code-model=medium",
-            "-C", "link-dead-code",
-        ]
-        # propagate march/mabi for consistency (use link-arg for staticlib builds – harmless)
-        cflags = getattr(rtconfig, "CFLAGS", "")
-        for flag in cflags.split():
-            if flag.startswith("-march=") or flag.startswith("-mabi="):
-                rustflags += ["-C", f"link-arg={flag}"]
-
-    if "thumb" in target or "aarch64" in target:
-        rustflags += ["-C", "link-arg=-nostartfiles"]
-
-    return " ".join(rustflags)
 
 def detect_rust_target(has, rtconfig):
     """
@@ -187,195 +115,102 @@ def detect_rust_target(has, rtconfig):
 
     return None
 
-def clear_feature(cwd):
-    global FEATURE_FILE_PATH
-    FEATURE_FILE_PATH = os.path.join(cwd, "rt-rust", "Cargo.toml")
 
-def prepare_set_feature(cur_pkg_dir):
-    global FEATURE_FILE_PATH
-    path = os.path.join(cur_pkg_dir, "rt-rust")
-    FEATURE_FILE_PATH = os.path.join(path, "Cargo.toml")
+def make_rustflags(rtconfig, target: str):
+    rustflags = [
+        "-C", "opt-level=z",
+        "-C", "panic=abort",
+        "-C", "relocation-model=static",
+    ]
 
-def select_feature(feature):
-    if FEATURE_FILE_PATH == "":
-        print("Rust build: Please call PrepareSetFeature first")
-        return
-    meta = toml.load(FEATURE_FILE_PATH)
-    meta["features"]["default"] += [feature]
-    with open(FEATURE_FILE_PATH, "w") as file:
-        toml.dump(meta, file)
+    if "riscv" in target:
+        rustflags += [
+            "-C", "code-model=medium",
+            "-C", "link-dead-code",
+        ]
+        # propagate march/mabi for consistency (use link-arg for staticlib builds – harmless)
+        cflags = getattr(rtconfig, "CFLAGS", "")
+        for flag in cflags.split():
+            if flag.startswith("-march=") or flag.startswith("-mabi="):
+                rustflags += ["-C", f"link-arg={flag}"]
+
+    if "thumb" in target or "aarch64" in target:
+        rustflags += ["-C", "link-arg=-nostartfiles"]
+
+    return " ".join(rustflags)
 
 
-# Helpers for decoupling PrebuildRust
+def collect_features(has):
+    feats = []
+    if has("RT_USING_SMP"):
+        feats.append("smp")
+    return feats
 
-def discover_rust_apps(app_dir):
-    paths = []
-    names = []
+
+def verify_rust_toolchain():
     try:
-        subdirs = os.listdir(app_dir)
+        r1 = subprocess.run(["rustc", "--version"], capture_output=True, text=True)
+        r2 = subprocess.run(["cargo", "--version"], capture_output=True, text=True)
+        return r1.returncode == 0 and r2.returncode == 0
     except Exception:
-        return [], []
-    for apps in subdirs:
-        proj = os.path.join(app_dir, apps)
-        if os.path.exists(os.path.join(proj, "Cargo.toml")) and not os.path.exists(os.path.join(proj, ".ignore")):
-            paths.append(proj)
-            try:
-                meta = toml.load(os.path.join(proj, "Cargo.toml"))
-                names.append(meta["package"]["name"])
-            except Exception:
-                print(f"Rust build: Error cargo pkg {proj}")
-                print("Rust build: Toml load file error!")
-                return [], []
-    return paths, names
-
-
-def ensure_dummy_project(cur_pkg_dir, rust_app_proj, rust_app_proj_name):
-    # create staticlib rust_dummy
-    if not os.path.exists(os.path.join(cur_pkg_dir, "rust_dummy", "Cargo.toml")):
-        if 0 != os.system("cd %s; cargo new --lib rust_dummy" % cur_pkg_dir):
-            print("Rust build: Create dummy project failed")
-            print("Rust build: Run cmd 'cargo new --lib rust_dummy' failed")
-            return False
-    # dependencies
-    TEMPLATE["dependencies"] = {}
-    for (name, path) in zip(rust_app_proj_name, rust_app_proj):
-        print("Rust add package: %s [%s]" % (name, path))
-        TEMPLATE["dependencies"][name] = {"path": path}
-        TEMPLATE["dependencies"]["rt_rust"] = {"path": os.path.join(cur_pkg_dir, "rt-rust")}
-    try:
-        # lib.rs
-        with open(os.path.join(cur_pkg_dir, "rust_dummy", "src/lib.rs"), "w") as flibrs:
-            flibrs.write("#![no_std]\n\n")
-            flibrs.write("extern crate rt_rust;\n")
-            flibrs.write("pub use rt_rust::*;\n")
-            for i in rust_app_proj_name:
-                flibrs.write("pub use %s::*;\n" % i)
-            flibrs.write("\n\n")
-            flibrs.write("\n\n")
-        # Cargo.toml
-        with open(os.path.join(cur_pkg_dir, "rust_dummy", "Cargo.toml"), "w") as ftoml:
-            toml.dump(TEMPLATE, ftoml)
-    except Exception:
-        print("Rust build: Generate dummy file failed")
-        print("Rust build: Write 'rust_dummy/Cargo.toml' or 'rust_dummy/src/lib.rs' failed!")
         return False
-    return True
 
 
-def resolve_target_and_toolchain(rtconfig):
-    target = detect_rust_target(_has, rtconfig)
-    if not target:
-        print('Error: Unable to detect Rust target; please check configuration')
-    else:
-        print(f'Detected Rust target: {target}')
-    target_installed = ensure_rust_target_installed(target)
-    return target, target_installed
-
-
-def get_rust_sysroot():
+def ensure_rust_target_installed(target: str):
     try:
-        rustc_path = subprocess.check_output("rustc --print sysroot", shell=True)
-        rustc_path = str(rustc_path[0:-1], "UTF-8")
+        result = subprocess.run(["rustup", "target", "list", "--installed"], capture_output=True, text=True)
+        if result.returncode == 0 and target in result.stdout:
+            return True
+        print(f"Rust target '{target}' is not installed.")
+        print(f"Please install it with: rustup target add {target}")
     except Exception:
-        print("Rust build: rust toolchains error")
-        print("Rust build: run cmd 'rustc --print sysroot' failed!")
-        return None
-    if not os.path.exists(rustc_path):
-        print("Rust build: cmd 'rustc --print sysroot' output error path!")
-        return None
-    return rustc_path
+        print("Warning: Failed to check rustup target list (rustup missing?)")
+    return False
 
 
-def make_remap_flags(rustc_path, cur_pkg_dir, app_dir):
-    remap_core = f" --remap-path-prefix={os.path.join(rustc_path, RUSTC_CORE_PATH)}=core"
-    remap_alloc = f" --remap-path-prefix={os.path.join(rustc_path, RUSTC_ALLOC_PATH)}=alloc"
-    # support single dir or list of app dirs
-    if isinstance(app_dir, (list, tuple)):
-        remap_apps = "".join([f" --remap-path-prefix={os.path.abspath(d)}=apps" for d in app_dir])
+def cargo_build_staticlib(rust_dir: str, target: str, features, debug: bool, rustflags: str = None):
+    build_root = os.path.join(os.path.abspath(os.path.join(rust_dir, os.pardir)), "build", "rust")
+    target_dir = os.path.join(build_root, "target")
+    os.makedirs(build_root, exist_ok=True)
+
+    env = os.environ.copy()
+    if rustflags:
+        prev = env.get("RUSTFLAGS", "").strip()
+        env["RUSTFLAGS"] = (prev + " " + rustflags).strip() if prev else rustflags
+    env["CARGO_TARGET_DIR"] = target_dir
+
+    cmd = ["cargo", "build", "--target", target, "--manifest-path", os.path.join(rust_dir, "Cargo.toml")]
+    if not debug:
+        cmd.insert(2, "--release")
+    if features:
+        cmd += ["--no-default-features", "--features", ",".join(features)]
+
+    print("Building Rust component (cargo)…")
+    res = subprocess.run(cmd, cwd=rust_dir, env=env, capture_output=True, text=True)
+    if res.returncode != 0:
+        print("Warning: Rust build failed")
+        if res.stderr:
+            print(res.stderr)
+        return None
+
+    mode = "debug" if debug else "release"
+    lib_path = os.path.join(target_dir, target, mode, "librt_rust.a")
+    if os.path.exists(lib_path):
+        print("Rust component built successfully")
+        return lib_path
+    print("Warning: Library not found at expected location")
+    return None
+
+
+def clean_rust_build(bsp_root: str):
+    build_dir = os.path.join(bsp_root, "build", "rust")
+    if os.path.exists(build_dir):
+        print("Cleaning Rust build artifacts…")
+        import shutil
+        try:
+            shutil.rmtree(build_dir)
+            print("Rust build artifacts cleaned")
+        except Exception as e:
+            print(f"Warning: Failed to clean Rust artifacts: {e}")
     else:
-        remap_apps = f" --remap-path-prefix={os.path.abspath(app_dir)}=apps"
-    remap_main = f" --remap-path-prefix={os.path.abspath(cur_pkg_dir)}="
-    return remap_core + remap_alloc + remap_apps + remap_main
-
-
-def is_debug_build():
-    return _has("RUST_DEBUG_BUILD")
-
-def build_cargo_cmd(target, target_installed, cur_pkg_dir, debug_build):
-    CARGO_CMD["out-path"] = CARGO_CMD["out-path"] % os.path.join(cur_pkg_dir, "rust_out")
-    CARGO_CMD["target-arch"] = CARGO_CMD["target-arch"] % target
-    parts = []
-    parts.append(CARGO_CMD["f1"])  # cargo rustc
-    if not target_installed and "f2" in CARGO_CMD:
-        parts.append(CARGO_CMD["f2"])  # -Z build-std
-    parts.append(CARGO_CMD["f3"])  # --target
-    parts.append(CARGO_CMD["target-arch"])  # <triple>
-    if not debug_build:
-        parts.append(CARGO_CMD["f4"])  # --release
-    parts.append(CARGO_CMD["out-path"])  # --target-dir=...
-    parts.append(CARGO_CMD["f5"])  # --
-    if not target_installed and "f6" in CARGO_CMD:
-        parts.append(CARGO_CMD["f6"])  # -Z build-std-features
-    return " ".join(parts)
-
-
-def run_cargo_build(build_path, rtt_path, rustflags, cargo_cmd):
-    cmd = 'cd %s; RTT_PATH=%s RUSTFLAGS="%s" %s' % (
-        build_path,
-        rtt_path + "/../",
-        rustflags,
-        cargo_cmd,
-    )
-    print(cmd)
-    return os.system(cmd) == 0
-
-
-def copy_artifact(cur_pkg_dir, target, debug_build):
-    profile = "debug" if debug_build else "release"
-    src = os.path.join(cur_pkg_dir, f"rust_out/{target}/{profile}/librust.a")
-    dst = os.path.join(cur_pkg_dir, "rust_out")
-    return os.system(f"cp {src} {dst}") == 0
-
-# Refactored PrebuildRust using helpers
-
-def prebuild_rust(cur_pkg_dir, rtconfig, rtt_path, app_dir):
-    # allow multi directories
-    app_dirs = app_dir if isinstance(app_dir, (list, tuple)) else [app_dir]
-    rust_app_proj = []
-    rust_app_proj_name = []
-    for d in app_dirs:
-        paths, names = discover_rust_apps(d)
-        rust_app_proj += paths
-        rust_app_proj_name += names
-    if len(rust_app_proj) == 0:
-        return "PASS"
-
-    if not ensure_dummy_project(cur_pkg_dir, rust_app_proj, rust_app_proj_name):
-        return "ERR"
-
-    print("Rust build: Success import apps.")
-
-    target, target_installed = resolve_target_and_toolchain(rtconfig)
-
-    rustc_path = get_rust_sysroot()
-    if not rustc_path:
-        return "ERR"
-
-    base_flags = make_rustflags(rtconfig, target)
-    all_rust_flag = base_flags + make_remap_flags(rustc_path, cur_pkg_dir, app_dirs)
-
-    debug_build = is_debug_build()
-
-    cargo_cmd = build_cargo_cmd(target, target_installed, cur_pkg_dir, debug_build)
-
-    build_path = os.path.join(cur_pkg_dir, "rust_dummy")
-    if not run_cargo_build(build_path, rtt_path, all_rust_flag, cargo_cmd):
-        print("Rust build: prebuild rust failed.")
-        print("Rust build: run build command failed.")
-        return "ERR"
-
-    if not copy_artifact(cur_pkg_dir, target, debug_build):
-        print("Rust build: Copy librust.a failed.")
-        return "ERR"
-
-    return "OK"
+        print("No Rust build artifacts to clean")
