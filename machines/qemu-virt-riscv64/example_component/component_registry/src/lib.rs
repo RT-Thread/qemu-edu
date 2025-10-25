@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       notes
- * 2025-01-01     foxglove     Component registry for unified component registration
+ * 2025-10-25     foxglove     Component registry for unified component registration
  */
 #![no_std]
 
