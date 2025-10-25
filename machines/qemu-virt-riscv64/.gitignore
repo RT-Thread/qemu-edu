@@ -8,3 +8,5 @@ build
 /rtconfig*
 text.txt
 fat
+Kconfig
+applications/*
