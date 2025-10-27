@@ -8,9 +8,9 @@ build
 /rtconfig*
 text.txt
 fat
-Kconfig
 applications/*
 /.config
 /link.lds
 /rtconfig.h
 /rtconfig.py
+/Kconfig
