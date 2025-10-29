@@ -1,5 +1,14 @@
+/*
+ * Copyright (c) 2006-2024, RT-Thread Development Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ * 2025-10-10     foxglove     RT-Thread Mutex implementation
+ */
 use crate::api::*;
-use crate::{panic_on_atomic_context, RTTError};
+use crate::{panic::panic_on_atomic_context, RTTError};
 use alloc::fmt;
 pub use alloc::sync::{Arc, Weak};
 use core::cell::UnsafeCell;
@@ -153,7 +162,6 @@ impl RawMutexOps for AtomicMutex {
                 .compare_exchange_weak(false, true, Ordering::Acquire, Ordering::Relaxed)
                 .is_err()
             {
-                // Wait until the lock looks unlocked before retrying
                 while self.1.load(Ordering::Relaxed) {}
             }
             Ok(())

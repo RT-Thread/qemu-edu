@@ -1,3 +1,12 @@
+/*
+ * Copyright (c) 2006-2024, RT-Thread Development Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ * 2025-10-10     foxglove     RT-Thread Time implementation
+ */
 use crate::api::*;
 use crate::bindings::libc;
 use core::time::Duration;

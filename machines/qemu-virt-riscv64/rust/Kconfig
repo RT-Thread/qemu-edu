@@ -6,14 +6,15 @@ menuconfig RT_USING_RUST
         This allows you to write RT-Thread components using Rust.
 
 if RT_USING_RUST
-
+    config RT_RUST_CORE
+        bool "Enable Rust Core Library"
+        default y
     config RUST_DEBUG_BUILD
         bool "Build Rust code in debug mode"
         default n
         help
             Build Rust code with debug symbols and without optimizations.
             This increases binary size but helps with debugging.
-
     config RUST_INIT_COMPONENT
         bool "Auto-initialize Rust component"
         default y

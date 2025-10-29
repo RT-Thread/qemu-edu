@@ -5,12 +5,12 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2025-01-XX     foxglove     RT-Thread GlobalAlloc implementation
+ * 2025-10-10     foxglove     RT-Thread GlobalAlloc implementation
  */
 
 use crate::api::mem::{mem_alloc, mem_alloc_aligned, mem_free, mem_free_aligned, mem_realloc};
 use core::alloc::{GlobalAlloc, Layout};
-use crate::panic_on_atomic_context;
+use crate::panic::panic_on_atomic_context;
 use core::ptr;
 use core::ffi::c_void;
 

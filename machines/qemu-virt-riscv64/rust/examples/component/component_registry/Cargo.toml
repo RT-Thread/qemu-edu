@@ -8,7 +8,7 @@ name = "em_component_registry"
 crate-type = ["staticlib"]
 
 [dependencies]
-rt-rust = { path = "../../../" }
+rt-rust = { path = "../../../core" }
 rt_macros = { path = "../../../rt_macros" }
 
 # Optional dependencies - only included when features are enabled

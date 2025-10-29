@@ -1,3 +1,12 @@
+/*
+ * Copyright (c) 2006-2024, RT-Thread Development Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ * 2025-10-10     foxglove     RT-Thread Thread implementation
+ */
 use crate::alloc::boxed::Box;
 use crate::api::*;
 use crate::{RTResult, RTTError};
@@ -9,13 +18,10 @@ use core::ffi::c_void;
 pub struct Thread(APIRawThread);
 
 impl Thread {
-    /// Delay some ticks: ticks
-    /// The clock cycle will depend on the configuration of the system
     pub fn delay(tick: usize) {
         let _ = thread_delay(tick);
     }
 
-    /// Delay some millisecond
     pub fn ms_delay(ms: usize) {
         let _ = thread_m_delay(ms as i32);
     }
@@ -33,19 +39,10 @@ impl Thread {
         thread_yield();
     }
 
-    /// # Note
-    /// The system has the function of automatically reclaiming the end thread.
-    /// If a thread is very short, it is likely to end before you do delete.
-    /// At this time, the handle is invalid.
-    /// If you try to delete it, an assertion will be generated.
-    /// So make sure that the thread you want to delete is not finished.
-    /// That's why the drop function is not implemented to delete threads.
     pub fn delete_thread(th: Self) {
         let _ = thread_delete(th.0);
     }
 
-    /// # Note
-    /// Please read the `Note` of `fn delete_thread`
     pub fn delete(&self) {
         let _ = thread_delete(self.0);
     }

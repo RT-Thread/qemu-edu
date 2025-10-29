@@ -169,7 +169,7 @@ def ensure_rust_target_installed(target: str):
 
 
 def cargo_build_staticlib(rust_dir: str, target: str, features, debug: bool, rustflags: str = None):
-    build_root = os.path.join(os.path.abspath(os.path.join(rust_dir, os.pardir)), "build", "rust")
+    build_root = os.path.join((os.path.abspath(os.path.join(rust_dir, os.pardir, os.pardir))), "build", "rust")
     target_dir = os.path.join(build_root, "target")
     os.makedirs(build_root, exist_ok=True)
 

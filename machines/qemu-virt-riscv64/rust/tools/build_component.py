@@ -81,7 +81,7 @@ def collect_component_features(has_func, component_dir=None):
     
     return features
 
-def cargo_build_component_staticlib(rust_dir, target, features, debug, rustflags=None):
+def cargo_build_component_staticlib(rust_dir, target, features, debug, rustflags=None, build_root=None):
     """
     Build a Rust component as a static library using Cargo.
     
@@ -91,22 +91,22 @@ def cargo_build_component_staticlib(rust_dir, target, features, debug, rustflags
         features: List of features to enable
         debug: Whether this is a debug build
         rustflags: Additional Rust compilation flags
+        build_root: Build root directory (if not provided, will raise error)
         
     Returns:
         str: Path to the built library file, or None if build failed
     """
-    build_root = os.path.join(
-        os.path.abspath(os.path.join(rust_dir, os.pardir, os.pardir, os.pardir, os.pardir)), 
-        "build", "example_component"
-    )
-    target_dir = os.path.join(build_root, "target")
+    if not build_root:
+        raise ComponentBuildError("build_root parameter is required")
+    
+    build_root = os.path.abspath(build_root)
     os.makedirs(build_root, exist_ok=True)
 
     env = os.environ.copy()
     if rustflags:
         prev = env.get("RUSTFLAGS", "").strip()
         env["RUSTFLAGS"] = (prev + " " + rustflags).strip() if prev else rustflags
-    env["CARGO_TARGET_DIR"] = target_dir
+    env["CARGO_TARGET_DIR"] = build_root
 
     cmd = [
         "cargo", "build", 
@@ -132,7 +132,7 @@ def cargo_build_component_staticlib(rust_dir, target, features, debug, rustflags
     mode = "debug" if debug else "release"
     
     # Try target-specific path first, then fallback to direct path
-    lib_path = os.path.join(target_dir, target, mode, "libem_component_registry.a")
+    lib_path = os.path.join(build_root, target, mode, "libem_component_registry.a")
     if os.path.exists(lib_path):
         print("Example component log built successfully")
         return lib_path
@@ -183,7 +183,8 @@ def build_example_component(cwd, has_func, rtconfig, build_root=None):
         target=target, 
         features=features, 
         debug=debug, 
-        rustflags=rustflags
+        rustflags=rustflags,
+        build_root=build_root
     )
     
     if rust_lib:

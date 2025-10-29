@@ -380,10 +380,8 @@ def build_example_usrapp(cwd, has_func, rtconfig, build_root=None):
         target = rust_build_support.detect_rust_target(has_func, rtconfig)
         debug = bool(has_func('RUST_DEBUG_BUILD'))
         rustflags = rust_build_support.make_rustflags(rtconfig, target)
-        build_root_base = build_root or os.path.join(cwd, "../../build", "example_usrapp")
-        
         LIBS, LIBPATH, success_count, total_count = build_all_user_apps(
-            cwd, target, debug, rustflags, build_root_base, has_func
+            cwd, target, debug, rustflags, build_root, has_func
         )
         
         if success_count == 0 and total_count > 0:

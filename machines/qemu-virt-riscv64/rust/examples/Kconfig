@@ -17,6 +17,7 @@ if RT_USING_RUST_EXAMPLES
         config RT_RUST_BUILD_APPLICATIONS
             bool "Build Application Examples"
             default y
+            depends on RT_USING_FINSH
             help
                 Build Rust application examples.
 

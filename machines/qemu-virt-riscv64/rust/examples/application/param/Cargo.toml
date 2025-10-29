@@ -8,6 +8,6 @@ name = "em_param"
 crate-type = ["staticlib"]
 
 [dependencies]
-rt-rust = { path = "../../../" }
+rt-rust = { path = "../../../core" }
 rt_macros = { path = "../../../rt_macros" }
 

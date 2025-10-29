@@ -12,4 +12,4 @@ default = []
 enable-log = []
 
 [dependencies]
-rt-rust = { path = "../../../" }
+rt-rust = { path = "../../../core" }

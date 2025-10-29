@@ -23,19 +23,19 @@
 #![allow(dead_code)]
 
 pub extern crate alloc;
-mod puts;
 
 #[doc = "Alloc by rt-thread"]
 #[global_allocator]
-static GLOBAL: malloc::RttAlloc = malloc::RttAlloc;
+static GLOBAL: allocator::RttAlloc = allocator::RttAlloc;
 pub mod api;
 pub mod bindings;
 
 pub mod init;
-pub mod malloc;
+pub mod allocator;
 pub mod mutex;
 pub mod out;
 pub mod fs;
+pub mod panic;
 pub mod param;
 pub mod queue;
 pub mod sem;
@@ -83,23 +83,3 @@ pub enum RTTError {
 }
 
 pub type RTResult<T> = Result<T, RTTError>;
-
-fn panic_on_atomic_context(s: &str) {
-    use crate::api::is_irq_context;
-    if is_irq_context() {
-        panic!("In irq context {}", s);
-    }
-}
-
-#[panic_handler]
-#[inline(never)]
-fn panic(info: &core::panic::PanicInfo) -> ! {
-    print!("{:}", info);
-    __rust_panic()
-}
-
-#[linkage = "weak"]
-#[unsafe(no_mangle)]
-fn __rust_panic() -> ! {
-    loop {}
-}

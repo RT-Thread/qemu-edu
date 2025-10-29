@@ -1,100 +1,14 @@
+# for module compiling
 import os
-import sys
 from building import *
 
 cwd = GetCurrentDir()
+objs = []
+list = os.listdir(cwd)
 
-# Import helper utilities
-sys.path.append(os.path.join(cwd, 'tools'))
-from build_support import (
-    detect_rust_target,
-    make_rustflags,
-    collect_features,
-    verify_rust_toolchain,
-    ensure_rust_target_installed,
-    cargo_build_staticlib,
-    clean_rust_build,
-)
+for d in list:
+    path = os.path.join(cwd, d)
+    if os.path.isfile(os.path.join(path, 'SConscript')):
+        objs = objs + SConscript(os.path.join(d, 'SConscript'))
 
-
-def _has(sym: str) -> bool:
-    try:
-        return bool(GetDepend([sym]))
-    except Exception:
-        return bool(GetDepend(sym))
-
-
-# Not enabled? Return empty group early
-if not _has('RT_USING_RUST'):
-    group = []
-    Return('group')
-
-
-# Source files – MSH command glue
-src = ['rust_cmd.c']
-LIBS = []
-LIBPATH = []
-
-if GetOption('clean'):
-    # Register Rust artifacts for cleaning
-    rust_build_dir = clean_rust_build(Dir('#').abspath)
-    if os.path.exists(rust_build_dir):
-        print(f'Registering {rust_build_dir} for cleanup')
-        Clean('.', rust_build_dir)
-    else:
-        print('No rust build artifacts to clean')
-else:
-    if verify_rust_toolchain():
-        import rtconfig
-
-        target = detect_rust_target(_has, rtconfig)
-        if not target:
-            print('Error: Unable to detect Rust target; please check configuration')
-        else:
-            print(f'Detected Rust target: {target}')
-
-            # Optional hint if target missing
-            ensure_rust_target_installed(target)
-
-            # Build mode and features
-            debug = bool(_has('RUST_DEBUG_BUILD'))
-            features = collect_features(_has)
-
-            rustflags = make_rustflags(rtconfig, target)
-            rust_lib = cargo_build_staticlib(
-                rust_dir=cwd, target=target, features=features, debug=debug, rustflags=rustflags
-            )
-
-            if rust_lib:
-                LIBS = ['rt_rust']
-                LIBPATH = [os.path.dirname(rust_lib)]
-                print('Rust library linked successfully')
-            else:
-                print('Warning: Failed to build Rust library')
-    else:
-        print('Warning: Rust toolchain not found')
-        print('Please install Rust from https://rustup.rs')
-
-# Collect examples build artifacts
-examples_group = []
-examples_path = os.path.join(cwd, 'examples')
-if os.path.exists(examples_path):
-    examples_sconscript = os.path.join(examples_path, 'SConscript')
-    if os.path.exists(examples_sconscript):
-        print('Building Rust examples...')
-        # Use variant_dir=None to avoid directory switching issues
-        examples_group = SConscript(examples_sconscript, variant_dir=None, duplicate=0)
-        if not examples_group:
-            examples_group = []
-
-# Define component group for SCons
-group = DefineGroup('rust', src, depend=['RT_USING_RUST'], LIBS=LIBS, LIBPATH=LIBPATH)
-
-# Combine main rust group with examples
-if examples_group:
-    if isinstance(examples_group, list):
-        group = [group] + examples_group
-    else:
-        group = [group, examples_group]
-
-Return('group')
+Return('objs')
