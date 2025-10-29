@@ -36,11 +36,13 @@ LIBS = []
 LIBPATH = []
 
 if GetOption('clean'):
-    # Clean Rust artifacts if toolchain present
-    if verify_rust_toolchain():
-        clean_rust_build(Dir('#').abspath)
+    # Register Rust artifacts for cleaning
+    rust_build_dir = clean_rust_build(Dir('#').abspath)
+    if os.path.exists(rust_build_dir):
+        print(f'Registering {rust_build_dir} for cleanup')
+        Clean('.', rust_build_dir)
     else:
-        print('Warning: Rust toolchain not found, skipping Rust clean')
+        print('No rust build artifacts to clean')
 else:
     if verify_rust_toolchain():
         import rtconfig
@@ -73,7 +75,26 @@ else:
         print('Warning: Rust toolchain not found')
         print('Please install Rust from https://rustup.rs')
 
+# Collect examples build artifacts
+examples_group = []
+examples_path = os.path.join(cwd, 'examples')
+if os.path.exists(examples_path):
+    examples_sconscript = os.path.join(examples_path, 'SConscript')
+    if os.path.exists(examples_sconscript):
+        print('Building Rust examples...')
+        # Use variant_dir=None to avoid directory switching issues
+        examples_group = SConscript(examples_sconscript, variant_dir=None, duplicate=0)
+        if not examples_group:
+            examples_group = []
+
 # Define component group for SCons
 group = DefineGroup('rust', src, depend=['RT_USING_RUST'], LIBS=LIBS, LIBPATH=LIBPATH)
+
+# Combine main rust group with examples
+if examples_group:
+    if isinstance(examples_group, list):
+        group = [group] + examples_group
+    else:
+        group = [group, examples_group]
 
 Return('group')

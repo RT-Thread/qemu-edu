@@ -20,10 +20,6 @@ if RT_USING_RUST
         help
             Automatically initialize Rust component during RT-Thread startup.
 
-    config RUST_LOG_COMPONENT
-        bool "Auto-initialize Rust log component"
-        default y
-        help
-            Automatically initialize Rust log component during RT-Thread startup.    
+    rsource "examples/Kconfig"
 
 endif

@@ -202,15 +202,7 @@ def cargo_build_staticlib(rust_dir: str, target: str, features, debug: bool, rus
     return None
 
 
-def clean_rust_build(bsp_root: str):
-    build_dir = os.path.join(bsp_root, "build", "rust")
-    if os.path.exists(build_dir):
-        print("Cleaning Rust build artifacts…")
-        import shutil
-        try:
-            shutil.rmtree(build_dir)
-            print("Rust build artifacts cleaned")
-        except Exception as e:
-            print(f"Warning: Failed to clean Rust artifacts: {e}")
-    else:
-        print("No Rust build artifacts to clean")
+def clean_rust_build(bsp_root: str, artifact_type: str = "rust"):
+    """Return the build directory path for SCons Clean operation"""
+    build_dir = os.path.join(bsp_root, "build", artifact_type)
+    return build_dir

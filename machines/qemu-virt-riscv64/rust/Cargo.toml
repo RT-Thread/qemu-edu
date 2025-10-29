@@ -1,5 +1,20 @@
 [workspace]
-members = [".", "macro-main"]
+members = [
+    ".", 
+    "macro-main",
+    "examples/application/fs",
+    "examples/application/loadlib",
+    "examples/application/mutex",
+    "examples/application/param",
+    "examples/application/queue",
+    "examples/application/semaphore",
+    "examples/application/thread",
+    "examples/component/component_registry",
+    "examples/component/log",
+]
+exclude = [
+    "examples/modules/example_lib",
+]
 
 [package]
 name = "rt-rust"
