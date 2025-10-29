@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       notes
- * 2025-01-XX     foxglove     Application export macro module
+ * 2025-10-29     foxglove     Application export macro module
  */
 
 use darling::FromMeta;
@@ -21,15 +21,23 @@ struct AppArgs {
     name: Option<String>,
 }
 
-/// RT-Thread 应用导出宏
+/// RT-Thread application export macro
 /// 
-/// 用于将函数导出为 RT-Thread 应用初始化函数
+/// Used to export a function as an RT-Thread application initialization entry
 /// 
-/// 用法：
+/// Usage:
+/// ```rust
+/// #[rt_app_export]
+/// fn my_app_init() {
+///     // Application initialization logic
+/// }
+/// ```
+/// 
+/// Or specify a name:
 /// ```rust
 /// #[rt_app_export(name = "my_app")]
-/// fn init_app() {
-///     // 应用初始化逻辑
+/// fn my_app_init() {
+///     // Application initialization logic
 /// }
 /// ```
 pub fn rt_app_export(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -66,7 +74,7 @@ pub fn rt_app_export(args: TokenStream, input: TokenStream) -> TokenStream {
     let mod_name = format_ident!("__app_func_{}_", arg.name.as_ref().unwrap());
     let call_func_name = f.sig.ident.clone();
 
-    // 检查函数签名
+    // Check function signature
     let valid_signature = f.sig.constness.is_none()
         && f.sig.unsafety.is_none()
         && f.sig.asyncness.is_none()

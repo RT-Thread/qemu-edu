@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       notes
- * 2025-01-XX     foxglove     Component export macro module
+ * 2025-10-29     foxglove     Component export macro module
  */
 
 use darling::FromMeta;
@@ -21,15 +21,23 @@ struct ComponentArgs {
     name: Option<String>,
 }
 
-/// RT-Thread 组件导出宏
+/// RT-Thread component export macro
 /// 
-/// 用于将函数导出为 RT-Thread 组件初始化函数
+/// Used to export a function as an RT-Thread component initialization entry
 /// 
-/// 用法：
+/// Usage:
+/// ```rust
+/// #[rt_component_export]
+/// fn my_component_init() {
+///     // Component initialization logic
+/// }
+/// ```
+/// 
+/// Or specify a name:
 /// ```rust
 /// #[rt_component_export(name = "my_component")]
-/// fn init_component() {
-///     // 组件初始化逻辑
+/// fn my_component_init() {
+///     // Component initialization logic
 /// }
 /// ```
 pub fn rt_component_export(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -66,7 +74,7 @@ pub fn rt_component_export(args: TokenStream, input: TokenStream) -> TokenStream
     let mod_name = format_ident!("__component_func_{}_", arg.name.as_ref().unwrap());
     let call_func_name = f.sig.ident.clone();
 
-    // 检查函数签名
+    // Check function signature
     let valid_signature = f.sig.constness.is_none()
         && f.sig.unsafety.is_none()
         && f.sig.asyncness.is_none()

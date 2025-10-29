@@ -148,7 +148,7 @@ impl Library {
         let h = self.handle;
         forget(self);
         let rc = libc::dlclose(h);
-        if rc != 0 {
+        if rc == 1 {
             Ok(())
         } else {
             Err(DlError::Close(rc))

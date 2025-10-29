@@ -261,13 +261,7 @@ def find_library_file(build_root, target, lib_name, debug):
     for search_path in search_paths:
         if not os.path.exists(search_path):
             continue
-            
-        # List all files in the directory for debugging
-        try:
-            files = os.listdir(search_path)
-        except Exception as e:
-            print(f"Error listing files in {search_path}: {e}")
-            
+                    
         for name in possible_names:
             lib_path = os.path.join(search_path, name)
             if os.path.exists(lib_path):

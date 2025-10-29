@@ -5,59 +5,57 @@
  *
  * Change Logs:
  * Date           Author       notes
- * 2025-01-XX     foxglove     Modular macro library for RT-Thread Rust
+ * 2025-10-29   foxglove     Modular macro library for RT-Thread Rust
  */
 
-//! RT-Thread Rust 宏库
+//! RT-Thread Rust Macro Library
 //! 
-//! 提供模块化的宏定义，用于简化 RT-Thread Rust 应用开发：
+//! This library provides Rust macros for RT-Thread system, including:
 //! 
-//! ## 主要宏
+//! - `rt_thread_main!` - Main thread entry macro
+//! - `rt_component_export!` - Component export macro
+//! - `rt_app_export!` - Application export macro
+//! - `msh_cmd_export!` - Shell command export macro
 //! 
-//! - `rt_thread_main!` - 程序入口宏，标记 Rust 的 main 函数
-//! - `rt_component_export!` - 导出组件初始化入口的宏
-//! - `rt_app_export!` - 导出应用初始化入口的宏
-//! - `msh_cmd_export!` - 导出 shell 命令的宏
+//! ## Usage Examples
 //! 
-//! ## 使用示例
-//! 
-//! ### 主函数入口
+//! ### Main Thread Entry
 //! ```rust
-//! use rt_thread_main::rt_thread_main;
+//! use rt_macros::rt_thread_main;
 //! 
-//! #[rt_thread_main(name = "my_app")]
-//! fn main(args: vec::IntoIter<rt_rust::param::ParamItem>) {
-//!     rt_rust::println!("Hello RT-Thread!");
+//! #[rt_thread_main]
+//! fn main() {
+//!     println!("Hello RT-Thread!");
 //! }
 //! ```
 //! 
-//! ### 组件导出
+//! ### Component Export
 //! ```rust
-//! use rt_thread_main::rt_component_export;
+//! use rt_macros::rt_component_export;
 //! 
-//! #[rt_component_export(name = "my_component")]
-//! fn init_component() {
-//!     rt_rust::println!("Component initialized");
+//! #[rt_component_export]
+//! fn my_component_init() {
+//!     // Component initialization code
 //! }
 //! ```
 //! 
-//! ### 应用导出
+//! ### Application Export
 //! ```rust
-//! use rt_thread_main::rt_app_export;
+//! use rt_macros::rt_app_export;
 //! 
-//! #[rt_app_export(name = "my_app")]
-//! fn init_app() {
-//!     rt_rust::println!("App initialized");
+//! #[rt_app_export]
+//! fn my_app_init() {
+//!     // Application initialization code
 //! }
 //! ```
 //! 
-//! ### Shell 命令导出
+//! ### Shell Command Export
 //! ```rust
-//! use rt_thread_main::msh_cmd_export;
+//! use rt_macros::msh_cmd_export;
 //! 
 //! #[msh_cmd_export(name = "hello", desc = "Say hello")]
 //! fn hello_cmd(args: vec::IntoIter<rt_rust::param::ParamItem>) {
-//!     rt_rust::println!("Hello from command!");
+//!     println!("Hello from shell command!");
 //! }
 //! ```
 

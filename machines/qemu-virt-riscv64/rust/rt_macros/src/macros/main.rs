@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       notes
- * 2025-01-XX     foxglove     Main entry macro module
+ * 2025-10-29     foxglove     Main thread entry macro module
  */
 
 use darling::FromMeta;
@@ -21,13 +21,24 @@ struct MainArgs {
     name: Option<String>,
 }
 
-/// RT-Thread 主函数入口宏
+/// RT-Thread main thread entry macro
 /// 
-/// 用法：
+/// Used to mark the main entry function of a Rust program, exporting it as 
+/// a main thread entry recognizable by RT-Thread
+/// 
+/// Usage:
 /// ```rust
-/// #[rt_thread_main(name = "my_app")]
-/// fn main(args: vec::IntoIter<rt_rust::param::ParamItem>) {
-///     // 应用逻辑
+/// #[rt_thread_main]
+/// fn main() {
+///     // Main thread logic
+/// }
+/// ```
+/// 
+/// Or specify a name:
+/// ```rust
+/// #[rt_thread_main(name = "my_main")]
+/// fn main() {
+///     // Main thread logic
 /// }
 /// ```
 pub fn rt_thread_main(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -62,13 +73,13 @@ pub fn rt_thread_main(args: TokenStream, input: TokenStream) -> TokenStream {
     let mod_name = format_ident!("__init_func_{}_", arg.name.as_ref().unwrap());
     let call_func_name = f.sig.ident.clone();
 
-    // 检查函数签名
+    // Check function signature
     let valid_signature = f.sig.constness.is_none()
         && f.sig.unsafety.is_none()
         && f.sig.asyncness.is_none()
         && f.vis == Visibility::Inherited
         && f.sig.abi.is_none()
-        && f.sig.inputs.len() == 1
+        && f.sig.inputs.is_empty()
         && f.sig.generics.params.is_empty()
         && f.sig.generics.where_clause.is_none()
         && f.sig.variadic.is_none()
@@ -80,7 +91,7 @@ pub fn rt_thread_main(args: TokenStream, input: TokenStream) -> TokenStream {
     if !valid_signature {
         return syn::parse::Error::new(
             f.span(),
-            "`#[rt_thread_main]` function must have signature `fn(args: vec::IntoIter<rt_rust::param::ParamItem>)`",
+            "`#[rt_thread_main]` function must have signature `fn()`",
         )
         .to_compile_error()
         .into();

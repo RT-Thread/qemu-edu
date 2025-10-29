@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       notes
- * 2025-01-XX     foxglove     Command export macro module
+ * 2025-10-29     foxglove     Command export macro module
  */
 
 use darling::FromMeta;
@@ -23,15 +23,15 @@ struct CmdArgs {
     desc: Option<String>,
 }
 
-/// RT-Thread Shell 命令导出宏
+/// RT-Thread Shell command export macro
 /// 
-/// 用于将函数导出为 RT-Thread Shell 命令
+/// Used to export a function as an RT-Thread Shell command
 /// 
-/// 用法：
+/// Usage:
 /// ```rust
 /// #[msh_cmd_export(name = "my_cmd", desc = "My command description")]
 /// fn my_command(args: vec::IntoIter<rt_rust::param::ParamItem>) {
-///     // 命令逻辑
+///     // Command logic
 /// }
 /// ```
 pub fn msh_cmd_export(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -70,7 +70,7 @@ pub fn msh_cmd_export(args: TokenStream, input: TokenStream) -> TokenStream {
     let mod_name = format_ident!("__cmd_func_{}_", arg.name.as_ref().unwrap());
     let call_func_name = f.sig.ident.clone();
 
-    // 检查函数签名
+    // Check function signature
     let valid_signature = f.sig.constness.is_none()
         && f.sig.unsafety.is_none()
         && f.sig.asyncness.is_none()

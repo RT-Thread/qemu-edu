@@ -42,7 +42,7 @@ def detect_rust_target(has, rtconfig):
     Decide the Rust target triple based on RT-Thread Kconfig and rtconfig.*.
     `has` is a callable: has("SYMBOL") -> bool
     """
-        # ARM Cortex-M
+    # ARM Cortex-M
     if has("ARCH_ARM"):
         # FPU hints from flags/macros
         cflags = getattr(rtconfig, "CFLAGS", "")
@@ -75,7 +75,6 @@ def detect_rust_target(has, rtconfig):
         # ABI must carry f/d to actually use hard-float calling convention
         abi = info["mabi"] or ""
         abi_has_fp = abi.endswith("f") or abi.endswith("d")
-        has_fpu = has("ARCH_RISCV_FPU") or has("ENABLE_FPU") or info["has_f"] or info["has_d"]
 
         if rv_bits == 32:
             # Only pick *f* target when ABI uses hard-float; otherwise use soft-float even if core has F/D
@@ -107,9 +106,35 @@ def detect_rust_target(has, rtconfig):
             return "thumbv7em-none-eabihf"
         return "thumbv7em-none-eabi"
     if "-march=rv32" in cflags:
-        return "riscv32imafc-unknown-none-elf" if ("f" in cflags or "d" in cflags) else "riscv32imac-unknown-none-elf"
+        march_val = None
+        mabi_val = None
+        for flag in cflags.split():
+            if flag.startswith("-march="):
+                march_val = flag[len("-march="):]
+            elif flag.startswith("-mabi="):
+                mabi_val = flag[len("-mabi="):]
+        has_f_or_d = False
+        if march_val and any(x in march_val for x in ("f", "d")):
+            has_f_or_d = True
+        if mabi_val and any(x in mabi_val for x in ("f", "d")):
+            has_f_or_d = True
+        return "riscv32imafc-unknown-none-elf" if has_f_or_d else "riscv32imac-unknown-none-elf"
     if "-march=rv64" in cflags:
-        if ("-mabi=lp64d" in cflags) or ("-mabi=lp64f" in cflags) or ("f" in cflags) or ("d" in cflags):
+        march_val = None
+        mabi_val = None
+        for flag in cflags.split():
+            if flag.startswith("-march="):
+                march_val = flag[len("-march="):]
+            elif flag.startswith("-mabi="):
+                mabi_val = flag[len("-mabi="):]
+        has_f_or_d = False
+        if mabi_val and (("lp64d" in mabi_val) or ("lp64f" in mabi_val)):
+            has_f_or_d = True
+        if march_val and any(x in march_val for x in ("f", "d")):
+            has_f_or_d = True
+        if mabi_val and any(x in mabi_val for x in ("f", "d")):
+            has_f_or_d = True
+        if has_f_or_d:
             return "riscv64gc-unknown-none-elf"
         return "riscv64imac-unknown-none-elf"
 

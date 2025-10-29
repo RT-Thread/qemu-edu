@@ -43,7 +43,6 @@ pub unsafe fn dl_sym<'lib, T>(lib: &'lib Library, symbol: *const c_char) -> Resu
 
 /// Print the last libdl error using RT-Thread `printf`.
 pub fn dl_print_last_error() {
-    // 使用 println! 更符合当前输出宏
     println!("libdl error: {}", libloading::DlError::Open(last_error()));
 }
 

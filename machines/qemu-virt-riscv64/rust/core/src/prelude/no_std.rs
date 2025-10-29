@@ -1,3 +1,12 @@
+/*
+ * Copyright (c) 2006-2024, RT-Thread Development Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       notes
+ * 2025-10-10     foxglove     Prelude module
+ */
 pub use core::cell::RefCell;
 pub use core::cell::UnsafeCell;
 pub use core::cmp::*;

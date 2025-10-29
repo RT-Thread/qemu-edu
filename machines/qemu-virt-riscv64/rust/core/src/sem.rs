@@ -72,7 +72,9 @@ impl Semaphore {
     pub fn release(&self) {
         semaphore_release(self.sem);
     }
+}
 
+impl Drop for Semaphore {
     fn drop(&mut self) {
         semaphore_delete(self.sem)
     }
