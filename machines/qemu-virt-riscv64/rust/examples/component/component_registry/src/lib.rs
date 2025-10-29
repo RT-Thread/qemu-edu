@@ -6,12 +6,14 @@
  * Change Logs:
  * Date           Author       notes
  * 2025-10-25     foxglove     Component registry for unified component registration
+ * 2025-10-29     foxglove     Updated to demonstrate new modular macro interface
  */
 #![no_std]
 
 extern crate alloc;
 
-use macro_main::macro_main_use;
+// 演示新的模块化宏接口
+use rt_macros::rt_component_export;
 use rt_rust::param::{Param, ParamItem};
 use rt_rust::println;
 
@@ -22,10 +24,9 @@ pub use em_component_log::*;
 use em_component_log::logging::Level;
 
 /// 统一的组件注册入口点
-/// 这个函数负责注册所有启用的组件，避免重复注册问题
 #[cfg(feature = "enable-log")]
-#[macro_main_use(name = "rust_component_registry", component = true, desc = "Rust component registry.")]
-fn main(_param: Param) {
+#[rt_component_export(name = "rust_component_registry")]
+fn init_registry_component() {
     println!("[logging component init] hello world");
     log!(Level::Info, "hello world");
     info!("hello world");

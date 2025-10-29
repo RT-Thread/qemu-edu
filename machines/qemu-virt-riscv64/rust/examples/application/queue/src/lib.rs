@@ -6,6 +6,7 @@
  * Change Logs:
  * Date           Author       notes
  * 2025-10-10     foxglove     queue test demo
+ * 2025-10-29     foxglove     Updated to demonstrate new modular macro interface
  */
 #![no_std]
 
@@ -14,14 +15,14 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::sync::Arc;
 use core::time::Duration;
-use macro_main::macro_main_use;
+use rt_macros::msh_cmd_export;
 use rt_rust::queue::Queue;
 use rt_rust::param::Param;
 use rt_rust::println;
 use rt_rust::thread;
 use rt_rust::time;
 
-#[macro_main_use(name = "rust_queue_demo", cmd = true, desc = "Rust example app.")]
+#[msh_cmd_export(name = "rust_queue_demo", desc = "Rust example app.")]
 fn main(_param: Param) {
     let send = Arc::new(Queue::new(2).unwrap());
     let recv = send.clone();

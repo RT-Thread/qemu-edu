@@ -6,22 +6,22 @@
  * Change Logs:
  * Date           Author       notes
  * 2025-10-10     foxglove     load library example
+ * 2025-10-29     foxglove     Updated to demonstrate new modular macro interface
  */
 #![no_std]
 
 extern crate alloc;
 
-use macro_main::macro_main_use;
+use rt_macros::msh_cmd_export;
 use rt_rust::println;
 use rt_rust::get_libfn;
 use core::ffi::{c_int, c_char};
 use rt_rust::param::Param;
 
-#[macro_main_use(name = "rust_dl_demo", cmd = true, desc = "Rust example app.")]
+#[msh_cmd_export(name = "rust_dl_demo", desc = "Rust dynamic library demo")]
 fn main(_param: Param) {
-    println!("\n=== Macro Demo ===");
+    println!("\n=== Dynamic Library Demo ===");
 
-    // 直接调用宏生成的函数
     get_libfn!("/hello.mo", "main", my_hello, ());
     my_hello();
 

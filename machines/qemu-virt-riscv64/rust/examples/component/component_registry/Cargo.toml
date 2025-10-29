@@ -9,7 +9,7 @@ crate-type = ["staticlib"]
 
 [dependencies]
 rt-rust = { path = "../../../" }
-macro_main = { path = "../../../macro-main" }
+rt_macros = { path = "../../../rt_macros" }
 
 # Optional dependencies - only included when features are enabled
 em_component_log = { path = "../log", optional = true }

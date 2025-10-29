@@ -21,11 +21,11 @@
 
 **Usage**
 
-- Import the `macro_main` procedural macro in your Rust code.
-- Add the `#[macro_main_use]` attribute to the `main` function.
+- Import the `rt_macros` procedural macro in your Rust code.
+- Add the `#[rt_main_export]` attribute to the `main` function.
 - Register as a component or an application as needed.
-    - Component: `component = true`, Automatically registers as a component initialization entry.
-    - Application: `app = true`, Automatically registers as an application initialization entry.
+    - Component: `#[rt_component_export(name = "rust_component_registry")]`
+    - Application: `#[rt_app_export(name = "rust_app_example")]`
 - Compile the Rust code; the resulting executable will contain the `main` function entry.
 - When C code needs to call Rust functions, declare the Rust function prototypes in C code and use `extern "C"` to specify the calling convention. For example: `extern "C" void rust_function_name(void);`
 

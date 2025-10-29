@@ -83,7 +83,9 @@ rust/
    - 对接RT-Thread的内存管理系统
 
 4. **macros/** - 宏定义
-   - `thread_entry!` - 标记线程入口函数
+   - `rt_thread_main!` - 程序入口宏，标记Rust的main函数
+   - `rt_component_export!` - 导出组件初始化入口的宏
+   - `rt_app_export!` - 导出应用初始化入口的宏
    - `msh_cmd_export!` - 导出shell命令的宏
    - 简化在no_std模式下的开发
 

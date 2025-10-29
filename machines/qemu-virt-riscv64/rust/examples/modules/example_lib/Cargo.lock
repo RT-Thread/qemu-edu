@@ -38,76 +38,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "em_component_log"
+name = "examplelib"
 version = "0.1.0"
 dependencies = [
  "rt-rust",
-]
-
-[[package]]
-name = "em_component_registry"
-version = "0.1.0"
-dependencies = [
- "em_component_log",
- "rt-rust",
- "rt_macros",
-]
-
-[[package]]
-name = "em_fs"
-version = "0.1.0"
-dependencies = [
- "em_component_log",
- "rt-rust",
- "rt_macros",
-]
-
-[[package]]
-name = "em_loadlib"
-version = "0.1.0"
-dependencies = [
- "rt-rust",
- "rt_macros",
-]
-
-[[package]]
-name = "em_mutex"
-version = "0.1.0"
-dependencies = [
- "rt-rust",
- "rt_macros",
-]
-
-[[package]]
-name = "em_param"
-version = "0.1.0"
-dependencies = [
- "rt-rust",
- "rt_macros",
-]
-
-[[package]]
-name = "em_queue"
-version = "0.1.0"
-dependencies = [
- "rt-rust",
- "rt_macros",
-]
-
-[[package]]
-name = "em_sem"
-version = "0.1.0"
-dependencies = [
- "rt-rust",
- "rt_macros",
-]
-
-[[package]]
-name = "em_thread"
-version = "0.1.0"
-dependencies = [
- "rt-rust",
- "rt_macros",
 ]
 
 [[package]]

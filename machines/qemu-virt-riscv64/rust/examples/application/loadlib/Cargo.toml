@@ -9,4 +9,4 @@ crate-type = ["staticlib"]
 
 [dependencies]
 rt-rust = { path = "../../../" }
-macro_main = { path = "../../../macro-main/" }
+rt_macros = { path = "../../../rt_macros" }

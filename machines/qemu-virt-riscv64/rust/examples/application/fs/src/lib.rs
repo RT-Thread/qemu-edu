@@ -7,17 +7,18 @@
  * Change Logs:
  * Date           Author       notes
  * 2025-10-20     foxglove     Rust file opration test.
+ * 2025-10-29     foxglove     Updated to demonstrate new modular macro interface
  */
 #![no_std]
 
 extern crate alloc;
 
-use macro_main::macro_main_use;
+use rt_macros::msh_cmd_export;
 use rt_rust::{fs, println};
 use rt_rust::param::Param;
 use em_component_log::{info, error};
 
-#[macro_main_use(name = "rust_file_demo", cmd = true, desc = "Rust example app.")]
+#[msh_cmd_export(name = "rust_file_demo", desc = "Rust example app.")]
 fn main(_param: Param) {
     println!("[rust_file_test] start");
 

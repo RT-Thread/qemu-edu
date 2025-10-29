@@ -13,4 +13,3 @@ enable-log = []
 
 [dependencies]
 rt-rust = { path = "../../../" }
-macro_main = { path = "../../../macro-main/" }
