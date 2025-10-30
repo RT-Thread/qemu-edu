@@ -13,18 +13,14 @@ example_usrapp/
 ├── param/                  # Parameter handling examples
 ├── queue/                  # Message queue examples
 ├── semaphore/              # Semaphore synchronization examples
-├── thread/                 # Thread management examples
-└── tools/                  # Build tools and configuration files
-    ├── build_usrapp.py     # User application build script
-    ├── feature_config_examples.py  # Feature configuration examples
-    └── README_cn.md        # Tool documentation (Chinese)
+└── thread/                 # Thread management examples
 ```
 
 ## Build and Run
 
 ### Prerequisites
 
-1. Ensure Rust support is enabled in RT-Thread configuration (`RT_USING_RUST`)
+1. Ensure Rust support is enabled in RT-Thread configuration (`RT_USING_RUST`), and enable examples compilation (`RT_USING_RUST_EXAMPLES`) and application examples compilation (`RT_RUST_BUILD_APPLICATIONS`).
 2. Install Rust toolchain and related dependencies
 3. Configure the correct cross-compilation environment
 
