@@ -13,18 +13,14 @@ example_usrapp/
 ├── param/                  # 参数处理示例
 ├── queue/                  # 消息队列示例
 ├── semaphore/              # 信号量同步示例
-├── thread/                 # 线程管理示例
-└── tools/                  # 构建工具和配置文件
-    ├── build_usrapp.py     # 用户应用构建脚本
-    ├── feature_config_examples.py  # 特性配置示例
-    └── README_cn.md        # 工具说明文档
+└── thread/                 # 线程管理示例
 ```
 
 ## 构建和运行
 
 ### 前提条件
 
-1. 确保 RT-Thread 配置中启用了 Rust 支持 (`RT_USING_RUST`)
+1. 确保 RT-Thread 配置中启用了 Rust 支持 (`RT_USING_RUST`)，并且开启 examples 编译(`RT_USING_RUST_EXAMPLES`)中的应用(`RT_RUST_BUILD_APPLICATIONS`)
 2. 安装 Rust 工具链和相关依赖
 3. 配置正确的交叉编译环境
 
@@ -64,7 +60,7 @@ rust_file_demo
 
 所有示例应用都依赖以下核心组件：
 - `rt-rust`: RT-Thread Rust 绑定库
-- `macro_main`: 主函数宏支持
+- `rt-macro`: 主函数宏支持
 
 `fs`示例还依赖日志组件：
 - `em_component_log`: 日志组件
