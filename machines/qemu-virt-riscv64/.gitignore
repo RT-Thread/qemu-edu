@@ -1,3 +1,16 @@
 mnt.c
 romfs_data.c
 opensbi
+build
+/*.config
+/*.lds
+/*.sh
+/rtconfig*
+text.txt
+fat
+applications/*
+/.config
+/link.lds
+/rtconfig.h
+/rtconfig.py
+/Kconfig
