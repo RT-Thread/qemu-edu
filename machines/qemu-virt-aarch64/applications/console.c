@@ -32,7 +32,7 @@ static int console_init()
 }
 INIT_ENV_EXPORT(console_init);
 
-static int console(int argc, char **argv)
+static int virtio_console_cmd(int argc, char **argv)
 {
     rt_err_t result = RT_EOK;
 
@@ -45,16 +45,16 @@ static int console(int argc, char **argv)
         }
         else
         {
-            rt_kprintf("Unknown command. Please enter 'console' for help\n");
+            rt_kprintf("Unknown command. Please enter 'virtio_console' for help\n");
             result = -RT_ERROR;
         }
     }
     else
     {
         rt_kprintf("Usage: \n");
-        rt_kprintf("console set <name>   - change console by name\n");
+        rt_kprintf("virtio_console set <name>   - change console by name\n");
         result = -RT_ERROR;
     }
     return result;
 }
-MSH_CMD_EXPORT(console, set console name);
+MSH_CMD_EXPORT_ALIAS(virtio_console_cmd, virtio_console, set virtio console name);
