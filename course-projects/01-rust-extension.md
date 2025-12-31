@@ -5,6 +5,8 @@
 * 难度：中高
 * 支持单位：RT-Thread开源社区
 
+[状态] ✅ 随着开源之夏的推进这份题目已经完结。
+
 ## 题目要求
 - 基于[RT-Thread/qemu-edu](https://github.com/RT-Thread/qemu-edu)仓库完成实现；
 - 在`rt-thread/components`下加入rust组件(目录)，实现Rust相关的支撑接口；
