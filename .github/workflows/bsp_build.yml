@@ -41,16 +41,16 @@ jobs:
             toolchain: riscv64-unknown-elf
             toolchain_url: https://github.com/RT-Thread/toolchains-ci/releases/download/v1.4/riscv64-unknown-elf-toolchain-10.2.0-2020.12.8-x86_64-linux-ubuntu14.tar.gz
             toolchain_path: /opt/riscv64-unknown-elf-toolchain-10.2.0-2020.12.8-x86_64-linux-ubuntu14
-            
+
           - bsp: qemu-vexpress-a9
             toolchain: arm-none-eabi
             apt_install: gcc-arm-none-eabi
-            
+
           - bsp: qemu-virt-aarch64
             toolchain: aarch64-none-elf
             toolchain_url: https://github.com/RT-Thread/toolchains-ci/releases/download/v1.6/gcc-arm-10.2-2020.11-x86_64-aarch64-none-elf.tar.xz
             toolchain_path: /opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-elf
-            
+
           - bsp: stm32f407-rt-spark
             toolchain: arm-none-eabi
             apt_install: gcc-arm-none-eabi
