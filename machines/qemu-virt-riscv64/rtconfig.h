@@ -110,6 +110,7 @@
 /* Memory Management */
 
 #define RT_PAGE_MAX_ORDER 11
+#define RT_PAGE_AFFINITY_BLOCK_SIZE 0x1000
 #define RT_USING_MEMPOOL
 #define RT_USING_SLAB
 #define RT_USING_SLAB_AS_HEAP
@@ -255,6 +256,7 @@
 
 #define RT_USING_SAL
 #define SAL_INTERNET_CHECK
+#define SOCKET_TABLE_STEP_LEN 4
 
 /* Docking with protocol stacks */
 
@@ -323,6 +325,7 @@
 #define RT_USING_UTEST
 #define UTEST_THR_STACK_SIZE 4096
 #define UTEST_THR_PRIORITY 20
+#define RT_UTEST_MAX_OPTIONS 64
 #define RT_USING_RESOURCE_ID
 #define RT_USING_ADT
 #define RT_USING_ADT_AVL
