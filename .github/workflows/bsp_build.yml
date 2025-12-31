@@ -91,11 +91,14 @@ jobs:
           wget -q ${{ matrix.toolchain_url }}
           filename=$(basename ${{ matrix.toolchain_url }})
           if [[ $filename == *.tar.gz ]]; then
-            sudo tar -xzf $filename -C /opt
+            sudo tar -xzf $filename -C /opt || { echo "Failed to extract $filename"; exit 1; }
           elif [[ $filename == *.tar.xz ]]; then
-            sudo tar -xf $filename -C /opt
+            sudo tar -xf $filename -C /opt || { echo "Failed to extract $filename"; exit 1; }
           elif [[ $filename == *.tar.bz2 ]]; then
-            sudo tar -xjf $filename -C /opt
+            sudo tar -xjf $filename -C /opt || { echo "Failed to extract $filename"; exit 1; }
+          else
+            echo "Unsupported archive format: $filename"
+            exit 1
           fi
 
       - name: Verify toolchain
@@ -121,8 +124,7 @@ jobs:
         with:
           name: ${{ matrix.bsp }}-build
           path: |
-            machines/${{ matrix.bsp }}/rtthread.bin
-            machines/${{ matrix.bsp }}/rtthread.elf
-            machines/${{ matrix.bsp }}/rt-thread.elf
-            machines/${{ matrix.bsp }}/rtthread.hex
+            machines/${{ matrix.bsp }}/*.bin
+            machines/${{ matrix.bsp }}/*.elf
+            machines/${{ matrix.bsp }}/*.hex
           if-no-files-found: ignore
